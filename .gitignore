@@ -1,0 +1,115 @@
+# ==========================
+# Dépendances
+# ==========================
+node_modules/
+
+# ==========================
+# Variables d'environnement
+# ==========================
+.env
+.env.*
+!.env.example
+
+# ==========================
+# Logs
+# ==========================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ==========================
+# Fichiers temporaires
+# ==========================
+tmp/
+temp/
+.cache/
+
+# ==========================
+# Build Angular / Ionic
+# ==========================
+dist/
+www/
+build/
+out-tsc/
+.angular/
+coverage/
+
+# ==========================
+# IDE et éditeurs
+# ==========================
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.code-workspace
+
+# ==========================
+# Système d'exploitation
+# ==========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ==========================
+# Clés SSH et certificats
+# ==========================
+*.pem
+*.key
+*.crt
+
+# ==========================
+# Fichiers de configuration sensibles
+# ==========================
+config/local.json
+config/production.json
+
+# ==========================
+# Uploads (si stockage local)
+# ==========================
+uploads/
+public/uploads/
+
+# ==========================
+# AWS
+# ==========================
+.aws/
+
+# ==========================
+# Archives
+# ==========================
+*.zip
+*.tar
+*.gz
+*.rar
+
+# ==========================
+# MongoDB
+# ==========================
+data/
+*.mongodb
+
+# ==========================
+# Fichiers de sauvegarde
+# ==========================
+*.bak
+*.old
+*.orig
+
+# ==========================
+# Rapports
+# ==========================
+coverage/
+.nyc_output/
+
+# ==========================
+# Fichiers générés
+# ==========================
+*.pid
+*.seed
+*.pid.lock
