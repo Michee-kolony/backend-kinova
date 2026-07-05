@@ -18,7 +18,8 @@ exports.registerClient = (req, res, next) => {
                 email: req.body.email,
                 telephone: req.body.telephone,
                 addresse: req.body.addresse,
-                password: hash
+                password: hash,
+                genre: req.body.genre
             });
 
             return client.save();
@@ -86,7 +87,8 @@ exports.loginClient = (req, res, next) => {
                         token: token,
                         name: client.name,
                         email: client.email,
-                        telephone: client.telephone
+                        telephone: client.telephone,
+                        genre: client.genre
                     });
 
                 });

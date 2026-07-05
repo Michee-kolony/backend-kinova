@@ -6,8 +6,18 @@ const clientSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
   password: { type: String, required: true },
   telephone: { type: String, required: true },
-  addresse: { type: String, trim: true },
-
+  adresse: { type: String, trim: true },
+  genre: {
+  type: String,
+  enum: ['Homme', 'Femme'],
+  set: (value) => {
+    if (!value) return value;
+    const v = value.toLowerCase();
+    if (v === 'homme' || v === 'h') return 'Homme';
+    if (v === 'femme' || v === 'f') return 'Femme';
+    return value;
+  }
+},
   date: { type: Date, default: Date.now },
 
   // 🔐 RESET PASSWORD

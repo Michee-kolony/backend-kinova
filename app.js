@@ -7,6 +7,7 @@ const bodyParser = require('body-parser');
 //mes  routes
 const routeClient = require('./routes/client');
 const routeAdministrateur = require('./routes/administrateur');
+const routeCategorie = require('./routes/categorie');
 
 const app = express();
 
@@ -38,6 +39,6 @@ app.get('/', (req, res, next) => {
 
 app.use('/client', routeClient);
 app.use('/auth', routeAdministrateur);
-
+app.use('/categorie', routeCategorie);
 
 module.exports = app;
