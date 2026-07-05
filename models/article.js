@@ -3,8 +3,18 @@ const mongoose = require('mongoose');
 const articleSchema = new mongoose.Schema({
   nom: {type: String, required: true, trim: true},
   prix: {type: Number, required: true},
+  prixreduit:{type: Number},
   reduction: {type: Number, default: 0, min: 0, max: 100},
   categorie: {type: String, required: true, trim: true},
+  genre: {type: String, enum: ['Homme', 'Femme'],
+            set: (value) => {
+            if (!value) return value;
+            const v = value.toLowerCase();
+            if (v === 'homme' || v === 'h') return 'Homme';
+            if (v === 'femme' || v === 'f') return 'Femme';
+            return value;
+           }
+},
   description: {type: String, required: true},
   images: {type: [String], default: []},
   vendeurId: {type: mongoose.Schema.Types.ObjectId,  required: true},
@@ -13,7 +23,16 @@ const articleSchema = new mongoose.Schema({
   createdAt: {type: Date, default: Date.now}
 });
 
-// Prix après réduction
+// Middleware pour calculer prixreduit avant sauvegarde
+articleSchema.pre('save', function () {
+  if (this.reduction > 0) {
+    this.prixreduit = this.prix - (this.prix * this.reduction / 100);
+  } else {
+    this.prixreduit = this.prix;
+  }
+});
+
+// Prix après réduction (virtual)
 articleSchema.virtual('prixFinal').get(function () {
   return this.prix - (this.prix * this.reduction / 100);
 });
