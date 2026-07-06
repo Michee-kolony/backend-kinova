@@ -86,3 +86,79 @@ exports.deleteArticle = async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 };
+
+
+exports.updateArticle = (req, res) => {
+
+    Article.findById(req.params.id)
+
+        .then(article => {
+
+            if (!article) {
+                return res.status(404).json({
+                    message: "Article introuvable"
+                });
+            }
+
+            // Mise à jour uniquement des champs reçus
+            if (req.body.nom !== undefined)
+                article.nom = req.body.nom;
+
+            if (req.body.prix !== undefined)
+                article.prix = req.body.prix;
+
+            if (req.body.reduction !== undefined)
+                article.reduction = req.body.reduction;
+
+            if (req.body.categorie !== undefined)
+                article.categorie = req.body.categorie;
+
+            if (req.body.genre !== undefined)
+                article.genre = req.body.genre;
+
+            if (req.body.description !== undefined)
+                article.description = req.body.description;
+
+            if (req.body.vendeurId !== undefined)
+                article.vendeurId = req.body.vendeurId;
+
+            if (req.body.vendeurNom !== undefined)
+                article.vendeurNom = req.body.vendeurNom;
+
+            if (req.body.vendeurTelephone !== undefined)
+                article.vendeurTelephone = req.body.vendeurTelephone;
+
+            // Nouvelles images
+            if (req.files && req.files.length > 0) {
+                article.images = req.files.map(file =>
+                    `https://pub-20adc7d32978483dafa25eec6f011365.r2.dev/${file.key}`
+                );
+            }
+
+            // Déclenche le middleware pre('save')
+            return article.save();
+
+        })
+
+        .then(article => {
+
+            if (!article) return;
+
+            res.status(200).json({
+                message: "Article modifié avec succès",
+                article
+            });
+
+        })
+
+        .catch(error => {
+
+            console.log(error);
+
+            res.status(500).json({
+                message: error.message
+            });
+
+        });
+
+};

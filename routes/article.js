@@ -9,5 +9,6 @@ router.post("/", upload.array("images",3), articleController.createArticle);
 router.get('/', articleController.getArticle);
 router.get('/:id', articleController.getOneArticle);
 router.delete('/:id', articleController.deleteArticle);
+router.put("/:id", upload.array("images", 3), articleController.updateArticle);
 
 module.exports = router;
