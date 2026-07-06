@@ -38,6 +38,13 @@ exports.getArticle = (req, res, next) => {
         .catch(error => res.status(500).json(error));
 };
 
+
+exports.getOneArticle = (req, res, next)=>{
+    Article.findOne({_id: req.params.id})
+           .then(data => res.status(200).json(data))
+           .catch(error => res.status(500).json(error));
+}
+
 exports.deleteArticle = async (req, res) => {
     try {
 

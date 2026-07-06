@@ -7,6 +7,7 @@ const articleController = require("../controllers/article");
 
 router.post("/", upload.array("images",3), articleController.createArticle);
 router.get('/', articleController.getArticle);
+router.get('/:id', articleController.getOneArticle);
 router.delete('/:id', articleController.deleteArticle);
 
 module.exports = router;
