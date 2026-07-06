@@ -6,14 +6,21 @@ const articleSchema = new mongoose.Schema({
   prixreduit:{type: Number},
   reduction: {type: Number, default: 0, min: 0, max: 100},
   categorie: {type: String, required: true, trim: true},
-  genre: {type: String, enum: ['Homme', 'Femme'],
-            set: (value) => {
-            if (!value) return value;
-            const v = value.toLowerCase();
-            if (v === 'homme' || v === 'h') return 'Homme';
-            if (v === 'femme' || v === 'f') return 'Femme';
-            return value;
-           }
+genre: {
+    type: String,
+    enum: ['Homme', 'Femme', 'Mixte', 'Enfants'],
+    set: (value) => {
+        if (!value) return value;
+
+        const v = value.toLowerCase().trim();
+
+        if (v === 'homme' || v === 'h') return 'Homme';
+        if (v === 'femme' || v === 'f') return 'Femme';
+        if (v === 'mixte' || v === 'm') return 'Mixte';
+        if (v === 'enfants' || v === 'enfant' || v === 'kids' || v === 'kid') return 'Enfants';
+
+        return value;
+    }
 },
   description: {type: String, required: true},
   images: {type: [String], default: []},
