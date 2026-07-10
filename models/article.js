@@ -36,14 +36,15 @@ const articleSchema = new mongoose.Schema({
 });
 
 // Calcul automatique du prix réduit
-articleSchema.pre('save', function (next) {
-  if (this.reduction > 0) {
-    this.prixreduit = this.prix - (this.prix * this.reduction / 100);
-  } else {
-    this.prixreduit = this.prix;
-  }
+articleSchema.pre('save', async function () {
 
-  next();
+    if (this.reduction > 0) {
+        this.prixreduit =
+            this.prix - (this.prix * this.reduction / 100);
+    } else {
+        this.prixreduit = this.prix;
+    }
+
 });
 
 // Virtual
