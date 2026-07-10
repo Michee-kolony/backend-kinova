@@ -58,45 +58,56 @@ exports.getOneArticle = (req, res, next)=>{
 }
 
 exports.deleteArticle = async (req, res) => {
+
     try {
 
         const article = await Article.findById(req.params.id);
 
-        if (!article) {
-            return res.status(404).json({ message: "Article introuvable" });
+        if(!article){
+            return res.status(404).json({
+                message:"Article introuvable"
+            });
         }
 
-        // supprimer toutes les images dans R2
-        if (article.images && article.images.length > 0) {
-            await Promise.all(
-                article.images.map(async (imageUrl) => {
 
-                    // extraction du key depuis ton URL publique
-                    const key = imageUrl.split(".r2.dev/")[1];
+        if(article.images?.length){
 
-                    if (key) {
-                        await r2.send(
-                            new DeleteObjectCommand({
-                                Bucket: 'kinova', // ou mets le nom direct si tu veux
-                                Key: key,
-                            })
-                        );
-                    }
-                })
-            );
+            for(const imageUrl of article.images){
+
+                const key = imageUrl.split(".r2.dev/")[1];
+
+                console.log("Suppression R2 :", key);
+
+
+                await r2.send(
+                    new DeleteObjectCommand({
+                        Bucket:"kinova",
+                        Key:key
+                    })
+                );
+
+            }
         }
 
-        // 🗑️ supprimer l'article en base
+
         await Article.findByIdAndDelete(req.params.id);
 
+
         res.status(200).json({
-            message: "Article supprimé avec succès"
+            message:"Article supprimé avec images"
         });
 
-    } catch (err) {
-        console.log(err);
-        res.status(500).json({ message: err.message });
+
+    } catch(error){
+
+        console.log(error);
+
+        res.status(500).json({
+            message:error.message
+        });
+
     }
+
 };
 
 exports.updateArticle = (req, res) => {
