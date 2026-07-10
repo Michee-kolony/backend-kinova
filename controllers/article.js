@@ -16,6 +16,16 @@ exports.createArticle = async (req, res) => {
             categorie: req.body.categorie,
             genre: req.body.genre,
             description: req.body.description,
+
+            // Nouveaux champs
+            stock: req.body.stock,
+            couleurs: Array.isArray(req.body.couleurs)
+                ? req.body.couleurs
+                : JSON.parse(req.body.couleurs || "[]"),
+            tailles: Array.isArray(req.body.tailles)
+                ? req.body.tailles
+                : JSON.parse(req.body.tailles || "[]"),
+
             images,
             vendeurId: req.body.vendeurId,
             vendeurNom: req.body.vendeurNom,
@@ -28,7 +38,9 @@ exports.createArticle = async (req, res) => {
 
     } catch (err) {
         console.log(err);
-        res.status(500).json({ message: err.message });
+        res.status(500).json({
+            message: err.message
+        });
     }
 };
 
@@ -87,7 +99,6 @@ exports.deleteArticle = async (req, res) => {
     }
 };
 
-
 exports.updateArticle = (req, res) => {
 
     Article.findById(req.params.id)
@@ -100,7 +111,6 @@ exports.updateArticle = (req, res) => {
                 });
             }
 
-            // Mise à jour uniquement des champs reçus
             if (req.body.nom !== undefined)
                 article.nom = req.body.nom;
 
@@ -119,6 +129,20 @@ exports.updateArticle = (req, res) => {
             if (req.body.description !== undefined)
                 article.description = req.body.description;
 
+            // Nouveaux champs
+            if (req.body.stock !== undefined)
+                article.stock = req.body.stock;
+
+            if (req.body.couleurs !== undefined)
+                article.couleurs = Array.isArray(req.body.couleurs)
+                    ? req.body.couleurs
+                    : JSON.parse(req.body.couleurs);
+
+            if (req.body.tailles !== undefined)
+                article.tailles = Array.isArray(req.body.tailles)
+                    ? req.body.tailles
+                    : JSON.parse(req.body.tailles);
+
             if (req.body.vendeurId !== undefined)
                 article.vendeurId = req.body.vendeurId;
 
@@ -135,7 +159,6 @@ exports.updateArticle = (req, res) => {
                 );
             }
 
-            // Déclenche le middleware pre('save')
             return article.save();
 
         })
