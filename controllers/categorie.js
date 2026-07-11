@@ -27,3 +27,20 @@ exports.supprimerCategorie = (req, res, next)=>{
               .catch(error=>res.status(500).json(error))
  
 }
+
+
+exports.getOneCategorie = (req, res) => {
+    Categorie.findOne({ nom: req.params.nom })
+        .then(categorie => {
+            if (!categorie) {
+                return res.status(404).json({
+                    message: "Catégorie introuvable"
+                });
+            }
+
+            res.status(200).json(categorie);
+        })
+        .catch(error => {
+            res.status(500).json(error);
+        });
+};
