@@ -49,6 +49,12 @@ exports.getallclient = (req, res, next) => {
         });
 };
 
+exports.getoneClient = (req, res, next)=>{
+
+    Client.findOne({_id:req.params.id})
+          .then(data=>res.status(200).json(data))
+          .catch(error=>res.status(500).json(error))
+}
 
 exports.loginClient = (req, res, next) => {
 

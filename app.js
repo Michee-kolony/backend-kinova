@@ -3,7 +3,6 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 
-
 //mes  routes
 const routeClient = require('./routes/client');
 const routeAdministrateur = require('./routes/administrateur');
@@ -29,15 +28,13 @@ mongoose.connect(
 app.use(bodyParser.json());
 app.use(cors());
 
-
 app.get('/', (req, res, next) => {
   res.status(200).json({
-    message: "🚀 API Kinova fonctionne correctement"
+    message: "API Kinova fonctionne correctement"
   });
 });
 
 //Déclaration de mes endpoints
-
 app.use('/client', routeClient);
 app.use('/auth', routeAdministrateur);
 app.use('/categorie', routeCategorie);
