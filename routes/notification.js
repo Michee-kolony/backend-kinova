@@ -4,32 +4,68 @@ const router = express.Router();
 const Token = require("../models/firebase");
 
 
-router.post("/token",(req,res)=>{
+router.post("/token", async (req,res)=>{
+
+    try {
+
+        const {token} = req.body;
 
 
-    const newToken = new Token({
+        if(!token){
 
-        token:req.body.token
+            return res.status(400).json({
+                message:"Token manquant"
+            });
 
-    });
+        }
 
 
-    newToken.save()
-
-    .then(data=>{
-
-        res.status(201).json({
-            message:"Token enregistré",
-            data
+        // Vérifier si le token existe déjà
+        const existingToken = await Token.findOne({
+            token: token
         });
 
-    })
 
-    .catch(error=>{
+        if(existingToken){
 
-        res.status(500).json(error);
+            return res.status(200).json({
 
-    });
+                message:"Token déjà enregistré",
+                data: existingToken
+
+            });
+
+        }
+
+
+        const newToken = new Token({
+
+            token: token
+
+        });
+
+
+        const savedToken = await newToken.save();
+
+
+        res.status(201).json({
+
+            message:"Token enregistré",
+            data:savedToken
+
+        });
+
+
+    } catch(error){
+
+        res.status(500).json({
+
+            message:"Erreur serveur",
+            error:error.message
+
+        });
+
+    }
 
 
 });
