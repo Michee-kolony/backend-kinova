@@ -8,6 +8,9 @@ const routeClient = require('./routes/client');
 const routeAdministrateur = require('./routes/administrateur');
 const routeCategorie = require('./routes/categorie');
 const routeArticle = require('./routes/article');
+const {sendRandomArticle} = require("./services/sendRandomNotification");
+const cron = require("node-cron");
+const notificationRoutes = require("./routes/notification");
 
 const app = express();
 
@@ -25,6 +28,15 @@ mongoose.connect(
   console.error(err);
 });
 
+
+cron.schedule("0 */2 * * *", async ()=>{
+
+    console.log("Envoi d'une notification...");
+
+    await sendRandomArticle();
+
+});
+
 app.use(bodyParser.json());
 app.use(cors());
 
@@ -39,5 +51,7 @@ app.use('/client', routeClient);
 app.use('/auth', routeAdministrateur);
 app.use('/categorie', routeCategorie);
 app.use('/article', routeArticle);
+app.use("/notification", notificationRoutes);
+
 
 module.exports = app;

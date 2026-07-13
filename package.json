@@ -14,11 +14,13 @@
     "body-parser": "^2.3.0",
     "cors": "^2.8.6",
     "express": "^5.2.1",
+    "firebase-admin": "^14.1.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.7.3",
     "mongoose-unique-validator": "^6.1.1",
     "multer": "^2.2.0",
     "multer-s3": "^3.0.1",
+    "node-cron": "^4.6.0",
     "nodemon": "^3.1.14"
   }
 }

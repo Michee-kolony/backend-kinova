@@ -113,3 +113,9 @@ coverage/
 *.pid
 *.seed
 *.pid.lock
+
+# Firebase Admin credentials
+kinova-e15c4-firebase-adminsdk-fbsvc-b1b60a0e2d.json
+
+# Environment files
+.env
