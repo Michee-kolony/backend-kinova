@@ -1,6 +1,7 @@
-
 const { initializeApp, cert } = require("firebase-admin/app");
+const { getMessaging } = require("firebase-admin/messaging");
 require("dotenv").config();
+
 
 const serviceAccount = {
     type: process.env.FIREBASE_TYPE,
@@ -16,8 +17,12 @@ const serviceAccount = {
     universe_domain: process.env.FIREBASE_UNIVERSE_DOMAIN
 };
 
+
 initializeApp({
     credential: cert(serviceAccount)
 });
 
-module.exports = require("firebase-admin");
+
+module.exports = {
+    messaging: getMessaging()
+};

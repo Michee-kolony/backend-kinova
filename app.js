@@ -12,6 +12,8 @@ const {sendRandomArticle} = require("./services/sendRandomNotification");
 const cron = require("node-cron");
 const notificationRoutes = require("./routes/notification");
 
+
+
 const app = express();
 
 mongoose.connect(
@@ -52,6 +54,7 @@ app.use('/auth', routeAdministrateur);
 app.use('/categorie', routeCategorie);
 app.use('/article', routeArticle);
 app.use("/notification", notificationRoutes);
+
 
 
 module.exports = app;
