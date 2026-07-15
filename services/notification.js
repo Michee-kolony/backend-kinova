@@ -1,4 +1,4 @@
-const admin = require("../config/firebase");
+const { messaging } = require("../config/firebase");
 
 
 exports.sendNotification = async (token, article) => {
@@ -47,7 +47,6 @@ exports.sendNotification = async (token, article) => {
 
     }
 
-
-    return admin.messaging().send(message);
+return messaging.send(message);
 
 };
