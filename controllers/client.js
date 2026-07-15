@@ -94,7 +94,9 @@ exports.loginClient = (req, res, next) => {
                         name: client.name,
                         email: client.email,
                         telephone: client.telephone,
-                        genre: client.genre
+                        adresse: client.adresse,
+                        genre: client.genre,
+                        date: client.date
                     });
 
                 });
