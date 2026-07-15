@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const app = express();
 
 //mes  routes
 const routeClient = require('./routes/client');
@@ -11,10 +12,7 @@ const routeArticle = require('./routes/article');
 const {sendRandomArticle} = require("./services/sendRandomNotification");
 const cron = require("node-cron");
 const notificationRoutes = require("./routes/notification");
-
-
-
-const app = express();
+const panierRoute = require('./routes/panier');
 
 mongoose.connect(
   'mongodb+srv://micheekolony:1708roosevelt@kinova.toentpq.mongodb.net/kinova?retryWrites=true&w=majority&appName=kinova',
@@ -54,7 +52,6 @@ app.use('/auth', routeAdministrateur);
 app.use('/categorie', routeCategorie);
 app.use('/article', routeArticle);
 app.use("/notification", notificationRoutes);
-
-
+app.use('/panier', panierRoute);
 
 module.exports = app;
