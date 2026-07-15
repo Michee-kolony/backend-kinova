@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const Token = require("../models/firebase");
+const { sendRandomArticle } = require("../services/sendRandomNotification");
 
 
 router.post("/token", async (req,res)=>{
@@ -67,6 +68,29 @@ router.post("/token", async (req,res)=>{
 
     }
 
+
+});
+
+//Route de test pour envoyer une notification
+router.get("/test", async (req, res) => {
+
+    try {
+
+        await sendRandomArticle();
+
+        res.status(200).json({
+            success: true,
+            message: "Notification envoyée avec succès."
+        });
+
+    } catch (error) {
+
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+
+    }
 
 });
 

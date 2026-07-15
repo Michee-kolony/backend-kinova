@@ -54,4 +54,8 @@ app.use('/article', routeArticle);
 app.use("/notification", notificationRoutes);
 app.use('/panier', panierRoute);
 
+
+
+
+
 module.exports = app;
