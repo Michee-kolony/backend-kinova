@@ -107,6 +107,60 @@ exports.loginClient = (req, res, next) => {
         });
 };
 
+exports.updateClient = async (req, res) => {
+
+    try {
+
+        const { clientId } = req.params;
+
+        // Récupérer uniquement les champs autorisés
+        const {
+            name,
+            email,
+            telephone,
+            genre
+        } = req.body;
+
+        const client = await Client.findById(clientId);
+
+        if (!client) {
+
+            return res.status(404).json({
+                message: "Client introuvable."
+            });
+
+        }
+
+        // Mise à jour des champs autorisés
+        if (name !== undefined) client.name = name;
+        if (email !== undefined) client.email = email;
+        if (telephone !== undefined) client.telephone = telephone;
+        if (genre !== undefined) client.genre = genre;
+
+        const updatedClient = await client.save();
+
+        res.status(200).json({
+
+            message: "Compte mis à jour avec succès.",
+
+            data: updatedClient
+
+        });
+
+    } catch (error) {
+
+        res.status(500).json({
+
+            message: "Erreur serveur.",
+
+            error: error.message
+
+        });
+
+    }
+
+};
+
 
 exports.deleteClient = (req, res, next) => {
 
