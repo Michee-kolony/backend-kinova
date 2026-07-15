@@ -74,103 +74,140 @@ exports.getPanier = (req, res) => {
 
 // ==================== POST - AJOUTER ARTICLE ====================
 // ⭐⭐⭐ VERSION CORRIGÉE - VÉRIFICATION DOUBLON ⭐⭐⭐
-exports.ajouterArticle = (req, res) => {
-  const { utilisateurId, article, quantite = 1 } = req.body;
 
-  // Validation de base
-  if (!article || !article._id) {
-    return res.status(400).json({
-      success: false,
-      message: 'Les informations de l\'article sont requises'
+exports.ajouterArticle = async (req, res) => {
+
+  try {
+
+    const { utilisateurId, article, quantite = 1 } = req.body;
+
+
+    if (!article || !article._id) {
+
+      return res.status(400).json({
+        success: false,
+        message: "Les informations de l'article sont requises"
+      });
+
+    }
+
+
+    let panier = await Panier.findOne({
+      utilisateurId,
+      statut: "actif"
     });
+
+
+    if (!panier) {
+
+      panier = new Panier({
+        utilisateurId,
+        articles: [],
+        codePromo: null,
+        statut: "actif"
+      });
+
+    }
+
+
+    const articleId = article._id;
+
+
+    const articleExistant = panier.articles.find(
+      item => item.articleId === articleId
+    );
+
+
+    if (articleExistant) {
+
+      return res.status(400).json({
+
+        success: false,
+
+        message: "Cet article est déjà dans votre panier",
+
+        data: articleExistant
+
+      });
+
+    }
+
+
+    panier.articles.push({
+
+      articleId,
+
+      nom: article.nom,
+
+      prix: article.prix,
+
+      reduction: article.reduction || 0,
+
+      categorie: article.categorie,
+
+      genre: article.genre,
+
+      description: article.description,
+
+      images: article.images || [],
+
+      stock: article.stock || 0,
+
+      couleurs: article.couleurs || [],
+
+      tailles: article.tailles || [],
+
+      vendeurId: article.vendeurId || "",
+
+      vendeurNom: article.vendeurNom || "",
+
+      vendeurTelephone: article.vendeurTelephone || "",
+
+      prixreduit: article.prixreduit || article.prix,
+
+      prixFinal: article.prixFinal || article.prix,
+
+      quantite,
+
+      couleurChoisie: article.couleurChoisie || null,
+
+      tailleChoisie: article.tailleChoisie || null,
+
+      ajouteLe: new Date()
+
+    });
+
+
+    const panierSauve = await panier.save();
+
+
+    return res.status(200).json({
+
+      success: true,
+
+      message: "Article ajouté au panier avec succès",
+
+      data: panierSauve
+
+    });
+
+
+  } catch(error) {
+
+
+    return res.status(500).json({
+
+      success:false,
+
+      message:"Erreur lors de l'ajout au panier",
+
+      error:error.message
+
+    });
+
+
   }
 
-  Panier.findOne({ utilisateurId, statut: 'actif' })
-    .then(panier => {
-      if (!panier) {
-        // Créer un nouveau panier si inexistant
-        const nouveauPanier = new Panier({
-          utilisateurId,
-          articles: [],
-          codePromo: null,
-          statut: 'actif'
-        });
-        return nouveauPanier.save();
-      }
-      return panier;
-    })
-    .then(panier => {
-      const articleId = article._id || article.id;
-      
-      // ⭐⭐⭐ VÉRIFIER SI L'ARTICLE EXISTE DÉJÀ ⭐⭐⭐
-      const articleExistant = panier.articles.find(
-        item => item.articleId === articleId
-      );
-
-      // ⭐ SI L'ARTICLE EXISTE DÉJÀ → RENVOYER UNE ERREUR
-      if (articleExistant) {
-        return res.status(400).json({
-          success: false,
-          message: 'Cet article est déjà dans votre panier',
-          data: {
-            articleId: articleId,
-            nom: articleExistant.nom,
-            quantite: articleExistant.quantite,
-            prix: articleExistant.prixFinal || articleExistant.prix,
-            couleurChoisie: articleExistant.couleurChoisie || null,
-            tailleChoisie: articleExistant.tailleChoisie || null
-          }
-        });
-      }
-
-      // ⭐ L'ARTICLE N'EXISTE PAS → L'AJOUTER
-      panier.articles.push({
-        articleId: articleId,
-        nom: article.nom,
-        prix: article.prix,
-        reduction: article.reduction || 0,
-        categorie: article.categorie,
-        genre: article.genre,
-        description: article.description,
-        images: article.images || [],
-        stock: article.stock || 0,
-        couleurs: article.couleurs || [],
-        tailles: article.tailles || [],
-        vendeurId: article.vendeurId || '',
-        vendeurNom: article.vendeurNom || '',
-        vendeurTelephone: article.vendeurTelephone || '',
-        createdAt: article.createdAt || new Date(),
-        prixreduit: article.prixreduit || article.prix,
-        prixFinal: article.prixFinal || article.prix,
-        quantite: quantite,
-        couleurChoisie: article.couleurChoisie || null,
-        tailleChoisie: article.tailleChoisie || null,
-        ajouteLe: new Date()
-      });
-
-      return panier.save();
-    })
-    .then(panierMisAJour => {
-      // ⭐ VÉRIFIER SI panierMisAJour EXISTE AVANT D'ENVOYER
-      if (!panierMisAJour) return;
-      
-      return res.status(200).json({
-        success: true,
-        message: 'Article ajouté au panier avec succès',
-        data: panierMisAJour
-      });
-    })
-    .catch(error => {
-      // ⭐ ÉVITER LES DOUBLES RÉPONSES
-      if (error.message && error.message.includes('already exists')) {
-        return; // Déjà géré plus haut
-      }
-      return res.status(500).json({
-        success: false,
-        message: 'Erreur lors de l\'ajout de l\'article au panier',
-        error: error.message
-      });
-    });
 };
 
 // ==================== PUT ====================
