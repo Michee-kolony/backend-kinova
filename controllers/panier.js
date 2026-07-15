@@ -210,68 +210,105 @@ exports.ajouterArticle = async (req, res) => {
 
 };
 
-// ==================== PUT ====================
-exports.mettreAJourQuantite = (req, res) => {
-  const { utilisateurId, articleId, quantite } = req.body;
+exports.mettreAJourQuantite = async (req, res) => {
 
-  if (!articleId) {
-    return res.status(400).json({
-      success: false,
-      message: 'L\'ID de l\'article est requis'
+  try {
+
+    const { utilisateurId, articleId, quantite } = req.body;
+
+
+    if (!articleId) {
+
+      return res.status(400).json({
+        success:false,
+        message:"L'ID de l'article est requis"
+      });
+
+    }
+
+
+    if (quantite === undefined || quantite < 0) {
+
+      return res.status(400).json({
+        success:false,
+        message:"La quantité doit être valide"
+      });
+
+    }
+
+
+    const panier = await Panier.findOne({
+      utilisateurId,
+      statut:"actif"
     });
+
+
+    if (!panier) {
+
+      return res.status(404).json({
+        success:false,
+        message:"Panier non trouvé"
+      });
+
+    }
+
+
+    const articleIndex = panier.articles.findIndex(
+      item => item.articleId === articleId
+    );
+
+
+    if(articleIndex === -1){
+
+      return res.status(404).json({
+        success:false,
+        message:"Article non trouvé dans le panier"
+      });
+
+    }
+
+
+    if(quantite === 0){
+
+      panier.articles.splice(articleIndex,1);
+
+    } else {
+
+      panier.articles[articleIndex].quantite = quantite;
+
+    }
+
+
+    const panierUpdated = await panier.save();
+
+
+    return res.status(200).json({
+
+      success:true,
+
+      message:"Quantité mise à jour avec succès",
+
+      data:panierUpdated
+
+    });
+
+
+  } catch(error){
+
+
+    return res.status(500).json({
+
+      success:false,
+
+      message:"Erreur lors de la mise à jour",
+
+      error:error.message
+
+    });
+
+
   }
 
-  if (quantite === undefined || quantite < 0) {
-    return res.status(400).json({
-      success: false,
-      message: 'La quantité doit être un nombre positif'
-    });
-  }
-
-  Panier.findOne({ utilisateurId, statut: 'actif' })
-    .then(panier => {
-      if (!panier) {
-        return res.status(404).json({
-          success: false,
-          message: 'Panier non trouvé pour cet utilisateur'
-        });
-      }
-
-      const articleIndex = panier.articles.findIndex(
-        item => item.articleId === articleId
-      );
-
-      if (articleIndex === -1) {
-        return res.status(404).json({
-          success: false,
-          message: 'Article non trouvé dans le panier'
-        });
-      }
-
-      if (quantite === 0) {
-        panier.articles.splice(articleIndex, 1);
-      } else {
-        panier.articles[articleIndex].quantite = quantite;
-      }
-
-      return panier.save();
-    })
-    .then(panierMisAJour => {
-      if (!panierMisAJour) return;
-
-      return res.status(200).json({
-        success: true,
-        message: 'Quantité mise à jour avec succès',
-        data: panierMisAJour
-      });
-    })
-    .catch(error => {
-      return res.status(500).json({
-        success: false,
-        message: 'Erreur lors de la mise à jour de la quantité',
-        error: error.message
-      });
-    });
 };
 
 // ==================== DELETE ====================
