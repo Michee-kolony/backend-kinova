@@ -1,10 +1,9 @@
 const Panier = require('../models/panier');
 
-
+// ==================== GET ====================
 exports.creerPanier = (req, res) => {
   const { utilisateurId } = req.body;
 
-  // Vérifier si l'utilisateur a déjà un panier actif
   Panier.findOne({ utilisateurId, statut: 'actif' })
     .then(panierExistant => {
       if (panierExistant) {
@@ -15,7 +14,6 @@ exports.creerPanier = (req, res) => {
         });
       }
 
-      // Créer un nouveau panier
       const nouveauPanier = new Panier({
         utilisateurId,
         articles: [],
@@ -26,14 +24,14 @@ exports.creerPanier = (req, res) => {
       return nouveauPanier.save();
     })
     .then(panierCree => {
-      res.status(201).json({
+      return res.status(201).json({
         success: true,
         message: 'Panier créé avec succès',
         data: panierCree
       });
     })
     .catch(error => {
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Erreur lors de la création du panier',
         error: error.message
@@ -41,14 +39,13 @@ exports.creerPanier = (req, res) => {
     });
 };
 
-//Récupérer le panier d'un utilisateur
+// ==================== GET ====================
 exports.getPanier = (req, res) => {
   const { utilisateurId } = req.params;
 
   Panier.findOne({ utilisateurId, statut: 'actif' })
     .then(panier => {
       if (!panier) {
-        // Si le panier n'existe pas, en créer un nouveau
         const nouveauPanier = new Panier({
           utilisateurId,
           articles: [],
@@ -60,14 +57,14 @@ exports.getPanier = (req, res) => {
       return panier;
     })
     .then(panier => {
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         message: 'Panier récupéré avec succès',
         data: panier
       });
     })
     .catch(error => {
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Erreur lors de la récupération du panier',
         error: error.message
@@ -75,7 +72,8 @@ exports.getPanier = (req, res) => {
     });
 };
 
-//Ajouter un article au panier
+// ==================== POST - AJOUTER ARTICLE ====================
+// ⭐⭐⭐ VERSION CORRIGÉE - VÉRIFICATION DOUBLON ⭐⭐⭐
 exports.ajouterArticle = (req, res) => {
   const { utilisateurId, article, quantite = 1 } = req.body;
 
@@ -102,52 +100,72 @@ exports.ajouterArticle = (req, res) => {
       return panier;
     })
     .then(panier => {
-      // Vérifier si l'article existe déjà dans le panier
-      const indexExistant = panier.articles.findIndex(
-        item => item.articleId === (article._id || article.id)
+      const articleId = article._id || article.id;
+      
+      // ⭐⭐⭐ VÉRIFIER SI L'ARTICLE EXISTE DÉJÀ ⭐⭐⭐
+      const articleExistant = panier.articles.find(
+        item => item.articleId === articleId
       );
 
-      if (indexExistant !== -1) {
-        // Mettre à jour la quantité si l'article existe déjà
-        panier.articles[indexExistant].quantite += quantite;
-      } else {
-        // Ajouter le nouvel article
-        panier.articles.push({
-          articleId: article._id || article.id,
-          nom: article.nom,
-          prix: article.prix,
-          reduction: article.reduction || 0,
-          categorie: article.categorie,
-          genre: article.genre,
-          description: article.description,
-          images: article.images,
-          stock: article.stock,
-          couleurs: article.couleurs || [],
-          tailles: article.tailles || [],
-          vendeurId: article.vendeurId,
-          vendeurNom: article.vendeurNom,
-          vendeurTelephone: article.vendeurTelephone,
-          createdAt: article.createdAt,
-          prixreduit: article.prixreduit || article.prix,
-          prixFinal: article.prixFinal || article.prix,
-          quantite: quantite,
-          couleurChoisie: article.couleurChoisie || null,
-          tailleChoisie: article.tailleChoisie || null,
-          ajouteLe: new Date()
+      // ⭐ SI L'ARTICLE EXISTE DÉJÀ → RENVOYER UNE ERREUR
+      if (articleExistant) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cet article est déjà dans votre panier',
+          data: {
+            articleId: articleId,
+            nom: articleExistant.nom,
+            quantite: articleExistant.quantite,
+            prix: articleExistant.prixFinal || articleExistant.prix,
+            couleurChoisie: articleExistant.couleurChoisie || null,
+            tailleChoisie: articleExistant.tailleChoisie || null
+          }
         });
       }
+
+      // ⭐ L'ARTICLE N'EXISTE PAS → L'AJOUTER
+      panier.articles.push({
+        articleId: articleId,
+        nom: article.nom,
+        prix: article.prix,
+        reduction: article.reduction || 0,
+        categorie: article.categorie,
+        genre: article.genre,
+        description: article.description,
+        images: article.images || [],
+        stock: article.stock || 0,
+        couleurs: article.couleurs || [],
+        tailles: article.tailles || [],
+        vendeurId: article.vendeurId || '',
+        vendeurNom: article.vendeurNom || '',
+        vendeurTelephone: article.vendeurTelephone || '',
+        createdAt: article.createdAt || new Date(),
+        prixreduit: article.prixreduit || article.prix,
+        prixFinal: article.prixFinal || article.prix,
+        quantite: quantite,
+        couleurChoisie: article.couleurChoisie || null,
+        tailleChoisie: article.tailleChoisie || null,
+        ajouteLe: new Date()
+      });
 
       return panier.save();
     })
     .then(panierMisAJour => {
-      res.status(200).json({
+      // ⭐ VÉRIFIER SI panierMisAJour EXISTE AVANT D'ENVOYER
+      if (!panierMisAJour) return;
+      
+      return res.status(200).json({
         success: true,
         message: 'Article ajouté au panier avec succès',
         data: panierMisAJour
       });
     })
     .catch(error => {
-      res.status(500).json({
+      // ⭐ ÉVITER LES DOUBLES RÉPONSES
+      if (error.message && error.message.includes('already exists')) {
+        return; // Déjà géré plus haut
+      }
+      return res.status(500).json({
         success: false,
         message: 'Erreur lors de l\'ajout de l\'article au panier',
         error: error.message
@@ -155,11 +173,10 @@ exports.ajouterArticle = (req, res) => {
     });
 };
 
-//Mettre à jour la quantité d'un article dans le panier
+// ==================== PUT ====================
 exports.mettreAJourQuantite = (req, res) => {
   const { utilisateurId, articleId, quantite } = req.body;
 
-  // Validation
   if (!articleId) {
     return res.status(400).json({
       success: false,
@@ -183,7 +200,6 @@ exports.mettreAJourQuantite = (req, res) => {
         });
       }
 
-      // Trouver l'article dans le panier
       const articleIndex = panier.articles.findIndex(
         item => item.articleId === articleId
       );
@@ -195,7 +211,6 @@ exports.mettreAJourQuantite = (req, res) => {
         });
       }
 
-      // Si quantité = 0, supprimer l'article
       if (quantite === 0) {
         panier.articles.splice(articleIndex, 1);
       } else {
@@ -205,16 +220,16 @@ exports.mettreAJourQuantite = (req, res) => {
       return panier.save();
     })
     .then(panierMisAJour => {
-      if (!panierMisAJour) return; // Déjà géré plus haut
+      if (!panierMisAJour) return;
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         message: 'Quantité mise à jour avec succès',
         data: panierMisAJour
       });
     })
     .catch(error => {
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Erreur lors de la mise à jour de la quantité',
         error: error.message
@@ -222,7 +237,7 @@ exports.mettreAJourQuantite = (req, res) => {
     });
 };
 
-//Supprimer un article du panier
+// ==================== DELETE ====================
 exports.supprimerArticle = (req, res) => {
   const { utilisateurId, articleId } = req.body;
 
@@ -242,7 +257,6 @@ exports.supprimerArticle = (req, res) => {
         });
       }
 
-      // Filtrer pour supprimer l'article
       const articlesAvant = panier.articles.length;
       panier.articles = panier.articles.filter(
         item => item.articleId !== articleId
@@ -258,16 +272,16 @@ exports.supprimerArticle = (req, res) => {
       return panier.save();
     })
     .then(panierMisAJour => {
-      if (!panierMisAJour) return; // Déjà géré plus haut
+      if (!panierMisAJour) return;
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         message: 'Article supprimé du panier avec succès',
         data: panierMisAJour
       });
     })
     .catch(error => {
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Erreur lors de la suppression de l\'article',
         error: error.message
@@ -275,7 +289,7 @@ exports.supprimerArticle = (req, res) => {
     });
 };
 
-//Vider le panier
+// ==================== DELETE ALL ====================
 exports.viderPanier = (req, res) => {
   const { utilisateurId } = req.body;
 
@@ -288,23 +302,22 @@ exports.viderPanier = (req, res) => {
         });
       }
 
-      // Vider le panier
       panier.articles = [];
       panier.codePromo = null;
 
       return panier.save();
     })
     .then(panierVide => {
-      if (!panierVide) return; // Déjà géré plus haut
+      if (!panierVide) return;
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         message: 'Panier vidé avec succès',
         data: panierVide
       });
     })
     .catch(error => {
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Erreur lors du vidage du panier',
         error: error.message
@@ -312,7 +325,7 @@ exports.viderPanier = (req, res) => {
     });
 };
 
-// 🏷️ Appliquer un code promo
+// ==================== CODE PROMO ====================
 exports.appliquerCodePromo = (req, res) => {
   const { utilisateurId, code } = req.body;
 
@@ -332,7 +345,6 @@ exports.appliquerCodePromo = (req, res) => {
         });
       }
 
-      // Vérifier si le code promo est valide (exemple)
       const codesValides = ['PROMO10', 'PROMO20', 'BLACKFRIDAY', 'FREESHIP'];
       if (!codesValides.includes(code.toUpperCase())) {
         return res.status(400).json({
@@ -346,16 +358,16 @@ exports.appliquerCodePromo = (req, res) => {
       return panier.save();
     })
     .then(panierMisAJour => {
-      if (!panierMisAJour) return; // Déjà géré plus haut
+      if (!panierMisAJour) return;
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         message: 'Code promo appliqué avec succès',
         data: panierMisAJour
       });
     })
     .catch(error => {
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Erreur lors de l\'application du code promo',
         error: error.message
@@ -363,7 +375,6 @@ exports.appliquerCodePromo = (req, res) => {
     });
 };
 
-//Supprimer le code promo
 exports.supprimerCodePromo = (req, res) => {
   const { utilisateurId } = req.body;
 
@@ -381,16 +392,16 @@ exports.supprimerCodePromo = (req, res) => {
       return panier.save();
     })
     .then(panierMisAJour => {
-      if (!panierMisAJour) return; // Déjà géré plus haut
+      if (!panierMisAJour) return;
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         message: 'Code promo supprimé avec succès',
         data: panierMisAJour
       });
     })
     .catch(error => {
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Erreur lors de la suppression du code promo',
         error: error.message
@@ -398,7 +409,7 @@ exports.supprimerCodePromo = (req, res) => {
     });
 };
 
-//Compter le nombre d'articles dans le panier
+// ==================== COMPTER ====================
 exports.compterArticles = (req, res) => {
   const { utilisateurId } = req.params;
 
@@ -417,7 +428,7 @@ exports.compterArticles = (req, res) => {
         0
       );
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         message: 'Nombre d\'articles récupéré avec succès',
         data: {
@@ -427,7 +438,7 @@ exports.compterArticles = (req, res) => {
       });
     })
     .catch(error => {
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Erreur lors du comptage des articles',
         error: error.message
@@ -435,7 +446,7 @@ exports.compterArticles = (req, res) => {
     });
 };
 
-//Supprimer complètement un panier (admin)
+// ==================== ADMIN ====================
 exports.supprimerPanier = (req, res) => {
   const { panierId } = req.params;
 
@@ -448,14 +459,14 @@ exports.supprimerPanier = (req, res) => {
         });
       }
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         message: 'Panier supprimé avec succès',
         data: panierSupprime
       });
     })
     .catch(error => {
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Erreur lors de la suppression du panier',
         error: error.message
@@ -463,7 +474,6 @@ exports.supprimerPanier = (req, res) => {
     });
 };
 
-//Récupérer tous les paniers (admin)
 exports.getAllPaniers = (req, res) => {
   const { statut, page = 1, limit = 10 } = req.query;
 
@@ -478,7 +488,7 @@ exports.getAllPaniers = (req, res) => {
     .sort({ createdAt: -1 })
     .then(paniers => {
       return Panier.countDocuments(query).then(total => {
-        res.status(200).json({
+        return res.status(200).json({
           success: true,
           message: 'Paniers récupérés avec succès',
           data: {
@@ -494,7 +504,7 @@ exports.getAllPaniers = (req, res) => {
       });
     })
     .catch(error => {
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Erreur lors de la récupération des paniers',
         error: error.message
@@ -502,7 +512,6 @@ exports.getAllPaniers = (req, res) => {
     });
 };
 
-//Changer le statut d'un panier
 exports.changerStatut = (req, res) => {
   const { panierId } = req.params;
   const { statut } = req.body;
@@ -527,14 +536,14 @@ exports.changerStatut = (req, res) => {
         });
       }
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         message: 'Statut du panier mis à jour avec succès',
         data: panierMisAJour
       });
     })
     .catch(error => {
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
         message: 'Erreur lors de la mise à jour du statut',
         error: error.message
