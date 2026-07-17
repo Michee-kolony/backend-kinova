@@ -11,4 +11,8 @@ router.post('/login', clientCtrl.loginClient);
 router.delete('/:id', clientCtrl.deleteClient);
 router.put('/:clientId', clientCtrl.updateClient);
 
+router.post('/forgot-password', clientCtrl.sendResetCode);
+router.post('/verify-code', clientCtrl.verifyResetCode);
+router.post('/reset-password', clientCtrl.resetPassword);
+
 module.exports = router;

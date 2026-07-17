@@ -22,8 +22,14 @@ const clientSchema = new mongoose.Schema({
 
   // 🔐 RESET PASSWORD
   resetToken: String,
-  resetTokenExpiration: Date
-});
+  resetTokenExpiration: Date,
+  resetCode: {
+    type: String
+},
 
+resetCodeExpiration: {
+    type: Date
+},
+});
 
 module.exports = mongoose.model('Client', clientSchema);

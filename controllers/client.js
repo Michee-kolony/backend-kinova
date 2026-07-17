@@ -1,6 +1,7 @@
 const Client = require('../models/client');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const transporter = require("../config/mail");
 
 exports.registerClient = (req, res, next) => {
 
@@ -35,7 +36,6 @@ exports.registerClient = (req, res, next) => {
             });
         });
 };
-
 
 exports.getallclient = (req, res, next) => {
     Client.find()
@@ -186,3 +186,200 @@ exports.deleteClient = (req, res, next) => {
             });
         });
 };
+
+//mes méthode de récupération Mot de passe
+exports.sendResetCode = async (req, res) => {
+
+    try {
+
+        const { email } = req.body;
+
+        const client = await Client.findOne({ email });
+
+        if (!client) {
+
+            return res.status(404).json({
+                message: "Aucun compte trouvé."
+            });
+
+        }
+
+        const code = Math.floor(1000 + Math.random() * 9000).toString();
+
+        client.resetCode = code;
+
+        client.resetCodeExpiration = Date.now() + 10 * 60 * 1000;
+
+        await client.save();
+
+        await transporter.sendMail({
+
+            from: '"Kinova" <kinova@ayemtech.com>',
+
+            to: client.email,
+
+            subject: "Réinitialisation du mot de passe",
+
+            html: `
+
+            <div style="font-family:Arial">
+
+            <h2>Kinova</h2>
+
+            <p>Votre code est :</p>
+
+            <h1 style="font-size:45px">${code}</h1>
+
+            <p>Ce code expire dans 10 minutes.</p>
+
+            </div>
+
+            `
+
+        });
+
+        res.json({
+
+            message: "Code envoyé."
+
+        });
+
+    }
+
+    catch(error){
+
+        res.status(500).json({
+
+            error:error.message
+
+        });
+
+    }
+
+}
+
+exports.verifyResetCode = async (req,res)=>{
+
+    try{
+
+        const {email,code}=req.body;
+
+        const client=await Client.findOne({email});
+
+        if(!client){
+
+            return res.status(404).json({
+
+                message:"Compte introuvable"
+
+            });
+
+        }
+
+        if(client.resetCode!==code){
+
+            return res.status(400).json({
+
+                message:"Code incorrect"
+
+            });
+
+        }
+
+        if(client.resetCodeExpiration<Date.now()){
+
+            return res.status(400).json({
+
+                message:"Code expiré"
+
+            });
+
+        }
+
+        res.json({
+
+            message:"Code valide"
+
+        });
+
+    }
+
+    catch(error){
+
+        res.status(500).json({
+
+            error:error.message
+
+        });
+
+    }
+
+}
+
+exports.resetPassword = async (req,res)=>{
+
+try{
+
+const {email,code,password}=req.body;
+
+const client=await Client.findOne({email});
+
+if(!client){
+
+return res.status(404).json({
+
+message:"Compte introuvable"
+
+});
+
+}
+
+if(client.resetCode!==code){
+
+return res.status(400).json({
+
+message:"Code invalide"
+
+});
+
+}
+
+if(client.resetCodeExpiration<Date.now()){
+
+return res.status(400).json({
+
+message:"Code expiré"
+
+});
+
+}
+
+const hash=await bcrypt.hash(password,10);
+
+client.password=hash;
+
+client.resetCode=undefined;
+
+client.resetCodeExpiration=undefined;
+
+await client.save();
+
+res.json({
+
+message:"Mot de passe modifié."
+
+});
+
+}
+
+catch(error){
+
+res.status(500).json({
+
+error:error.message
+
+});
+
+}
+
+}
