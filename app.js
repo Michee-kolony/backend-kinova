@@ -15,16 +15,16 @@ const notificationRoutes = require("./routes/notification");
 const panierRoute = require('./routes/panier');
 
 mongoose.connect(
-  'mongodb+srv://micheekolony:1708roosevelt@kinova.toentpq.mongodb.net/kinova?retryWrites=true&w=majority&appName=kinova',
+  'mongodb://micheekolony71%40gmail.com:1708roosevelt@187.55.225.170:27017/kinova?authSource=admin',
   {
     serverSelectionTimeoutMS: 5000
   }
 )
 .then(() => {
-  console.log('Connecté à MongoDB Atlas');
+  console.log('Connecté à MongoDB sur le VPS');
 })
 .catch((err) => {
-  console.error('Erreur de connexion à MongoDB Atlas');
+  console.error('Erreur de connexion à MongoDB sur le VPS');
   console.error(err);
 });
 

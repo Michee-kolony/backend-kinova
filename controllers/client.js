@@ -230,7 +230,7 @@ exports.sendResetCode = async (req, res) => {
 
             <h1 style="font-size:45px">${code}</h1>
 
-            <p>Ce code expire dans 10 minutes. Soyez plus rapide</p>
+            <p>Ce code expire dans 10 minutes.</p>
 
             </div>
 
