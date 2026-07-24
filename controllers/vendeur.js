@@ -4,7 +4,8 @@ const r2 = require("../config/r2");
 const {DeleteObjectCommand} = require("@aws-sdk/client-s3");
 const jwt = require('jsonwebtoken');
 
-
+// URL publique de votre bucket R2
+const R2_PUBLIC_URL = 'https://pub-20adc7d32978483dafa25eec6f011365.r2.dev';
 
 // ==========================================
 // INSCRIPTION VENDEUR
@@ -24,89 +25,67 @@ exports.inscrireVendeur = (req, res) => {
         mobileMoneyNumber
     } = req.body;
 
-
     // ==========================================
     // 1. VÉRIFICATION DES CHAMPS
     // ==========================================
 
-    if (!email ||!password || !confirmPassword || !storeName ||!storeCategory ||!phoneNumber ||!address ||!paymentMethod) {
-
+    if (!email || !password || !confirmPassword || !storeName || !storeCategory || !phoneNumber || !address || !paymentMethod) {
         return res.status(400).json({
             success: false,
             message: "Veuillez remplir tous les champs obligatoires"
         });
-
     }
-
 
     // ==========================================
     // 2. VÉRIFICATION MOT DE PASSE
     // ==========================================
 
     if (password !== confirmPassword) {
-
         return res.status(400).json({
             success: false,
             message: "Les mots de passe ne correspondent pas"
         });
-
     }
 
-
     if (password.length < 6) {
-
         return res.status(400).json({
             success: false,
             message: "Le mot de passe doit contenir au moins 6 caractères"
         });
-
     }
-
 
     // ==========================================
     // 3. VÉRIFICATION PHOTO
     // ==========================================
 
     if (!req.file) {
-
         return res.status(400).json({
             success: false,
             message: "La photo de profil est obligatoire"
         });
-
     }
-
 
     // ==========================================
     // 4. VÉRIFICATION MODE DE PAIEMENT
     // ==========================================
 
     if (!["mobile_money", "card"].includes(paymentMethod)) {
-
         return res.status(400).json({
             success: false,
             message: "Mode de paiement invalide"
         });
-
     }
-
 
     // ==========================================
     // 5. VÉRIFICATION MOBILE MONEY
     // ==========================================
 
-    if (
-        paymentMethod === "mobile_money" &&
-        !mobileMoneyNumber
-    ) {
-
+    if (paymentMethod === "mobile_money" && !mobileMoneyNumber) {
         return res.status(400).json({
             success: false,
             message: "Le numéro Mobile Money est obligatoire"
         });
-
     }
-
 
     // ==========================================
     // 6. VÉRIFIER SI EMAIL EXISTE
@@ -115,137 +94,217 @@ exports.inscrireVendeur = (req, res) => {
     Vendeur.findOne({
         email: email.toLowerCase().trim()
     })
-
     .then((vendeurExiste) => {
-
         if (vendeurExiste) {
-
             return res.status(409).json({
                 success: false,
                 message: "Cette adresse e-mail est déjà utilisée"
             });
-
         }
-
 
         // ==========================================
         // 7. HASH PASSWORD
         // ==========================================
 
         return bcrypt.hash(password, 10);
-
     })
-
     .then((hashedPassword) => {
-
         // ==========================================
-        // 8. URL PHOTO R2
+        // 8. URL PHOTO AVEC URL PUBLIQUE
         // ==========================================
-
-        const profilePhoto = req.file.location;
-
+        
+        // Utiliser l'URL publique au lieu de req.file.location
+        const profilePhoto = `${R2_PUBLIC_URL}/${req.file.key}`;
+        
+        console.log('URL photo générée:', profilePhoto); // Pour déboguer
 
         // ==========================================
         // 9. CRÉATION VENDEUR
         // ==========================================
 
         const vendeur = new Vendeur({
-
             email: email.toLowerCase().trim(),
-
             password: hashedPassword,
-
             storeName: storeName.trim(),
-
             storeCategory: storeCategory.trim(),
-
-            profilePhoto: profilePhoto,
-
+            profilePhoto: profilePhoto, // URL publique
             phoneNumber: phoneNumber.trim(),
-
             address: address.trim(),
-
             paymentMethod: paymentMethod,
-
-            mobileMoneyNumber:
-                paymentMethod === "mobile_money"
-                    ? mobileMoneyNumber.trim()
-                    : null,
-
+            mobileMoneyNumber: paymentMethod === "mobile_money" ? mobileMoneyNumber.trim() : null,
             status: "pending",
-
             isVerified: false
-
         });
-
 
         // ==========================================
         // 10. SAUVEGARDE
         // ==========================================
 
         return vendeur.save();
-
     })
-
     .then((vendeur) => {
-
         // ==========================================
         // 11. RÉPONSE
         // ==========================================
 
         return res.status(201).json({
-
             success: true,
-
             message: "Votre compte vendeur a été créé avec succès",
-
             vendeur: {
-
                 id: vendeur._id,
-
                 email: vendeur.email,
-
                 storeName: vendeur.storeName,
-
                 storeCategory: vendeur.storeCategory,
-
                 profilePhoto: vendeur.profilePhoto,
-
                 phoneNumber: vendeur.phoneNumber,
-
                 address: vendeur.address,
-
                 paymentMethod: vendeur.paymentMethod,
-
                 status: vendeur.status,
-
                 isVerified: vendeur.isVerified
-
             }
-
         });
-
     })
-
     .catch((error) => {
-
-        console.error(
-            "Erreur inscription vendeur :",
-            error
-        );
-
+        console.error("Erreur inscription vendeur :", error);
         return res.status(500).json({
-
             success: false,
-
             message: "Une erreur est survenue lors de la création du compte vendeur",
-
             error: error.message
+        });
+    });
+};
 
+// ==========================================
+// MISE À JOUR PHOTO DE PROFIL
+// ==========================================
+
+exports.updateProfilePhoto = async (req, res) => {
+    try {
+        const vendeurId = req.params.id;
+
+        // Vérifier si un fichier a été uploadé
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: "Aucune photo fournie"
+            });
+        }
+
+        // Récupérer le vendeur
+        const vendeur = await Vendeur.findById(vendeurId);
+        
+        if (!vendeur) {
+            return res.status(404).json({
+                success: false,
+                message: "Vendeur non trouvé"
+            });
+        }
+
+        // Supprimer l'ancienne photo si elle existe
+        if (vendeur.profilePhoto) {
+            try {
+                // Extraire le nom du fichier de l'ancienne URL
+                const oldKey = vendeur.profilePhoto.split('/').pop();
+                
+                if (oldKey) {
+                    const deleteCommand = new DeleteObjectCommand({
+                        Bucket: 'kinova', // Remplacez par le nom de votre bucket
+                        Key: oldKey
+                    });
+                    await r2.send(deleteCommand);
+                    console.log('Ancienne photo supprimée:', oldKey);
+                }
+            } catch (deleteError) {
+                console.warn('Erreur lors de la suppression de l\'ancienne photo:', deleteError);
+                // Continuer même si la suppression échoue
+            }
+        }
+
+        // Générer la nouvelle URL publique
+        const newProfilePhoto = `${R2_PUBLIC_URL}/${req.file.key}`;
+
+        // Mettre à jour le vendeur
+        vendeur.profilePhoto = newProfilePhoto;
+        vendeur.updatedAt = new Date().toISOString();
+        await vendeur.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Photo de profil mise à jour avec succès",
+            profilePhoto: newProfilePhoto,
+            vendeur: {
+                id: vendeur._id,
+                email: vendeur.email,
+                storeName: vendeur.storeName,
+                profilePhoto: vendeur.profilePhoto
+            }
         });
 
-    });
+    } catch (error) {
+        console.error('Erreur mise à jour photo:', error);
+        res.status(500).json({
+            success: false,
+            message: "Erreur lors de la mise à jour de la photo",
+            error: error.message
+        });
+    }
+};
+// ==========================================
+// MISE À JOUR DU PROFIL VENDEUR
+// ==========================================
 
+exports.updateVendeurProfile = async (req, res) => {
+    try {
+        const vendeurId = req.params.id;
+        const updates = req.body;
+
+        // Champs autorisés à être mis à jour
+        const allowedUpdates = [
+            'storeName',
+            'storeCategory',
+            'phoneNumber',
+            'address',
+            'paymentMethod',
+            'mobileMoneyNumber'
+        ];
+
+        const updateData = {};
+        Object.keys(updates).forEach(key => {
+            if (allowedUpdates.includes(key)) {
+                updateData[key] = updates[key];
+            }
+        });
+
+        // Ajouter la date de mise à jour
+        updateData.updatedAt = new Date().toISOString();
+
+        const vendeur = await Vendeur.findByIdAndUpdate(
+            vendeurId,
+            updateData,
+            { new: true, runValidators: true }
+        ).select('-password');
+
+        if (!vendeur) {
+            return res.status(404).json({
+                success: false,
+                message: "Vendeur non trouvé"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Profil mis à jour avec succès",
+            vendeur
+        });
+
+    } catch (error) {
+        console.error('Erreur mise à jour profil:', error);
+        res.status(500).json({
+            success: false,
+            message: "Erreur lors de la mise à jour du profil",
+            error: error.message
+        });
+    }
 };
 
 // ==========================================
