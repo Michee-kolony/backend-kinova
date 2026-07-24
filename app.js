@@ -13,6 +13,7 @@ const {sendRandomArticle} = require("./services/sendRandomNotification");
 const cron = require("node-cron");
 const notificationRoutes = require("./routes/notification");
 const panierRoute = require('./routes/panier');
+const vendeurRoute = require('./routes/vendeur');
 
 mongoose.connect(
   'mongodb://micheekolony71%40gmail.com:1708roosevelt@187.55.225.170:27017/kinova?authSource=admin',
@@ -53,6 +54,7 @@ app.use('/categorie', routeCategorie);
 app.use('/article', routeArticle);
 app.use("/notification", notificationRoutes);
 app.use('/panier', panierRoute);
+app.use('/vendeur', vendeurRoute);
 
 
 
