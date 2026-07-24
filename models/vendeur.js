@@ -28,7 +28,6 @@ const vendeurSchema = new mongoose.Schema(
       type: String,
       required: [true, "Le nom de la boutique est obligatoire"],
       unique: true,
-      // ✅ SUPPRESSION DE "lowercase: true" pour éviter les conflits
       trim: true
     },
 
@@ -36,11 +35,6 @@ const vendeurSchema = new mongoose.Schema(
       type: String,
       required: [true, "La catégorie de la boutique est obligatoire"],
       trim: true
-    },
-
-    profilePhoto: {
-      type: String,
-      required: [true, "La photo de profil est obligatoire"]
     },
 
     phoneNumber: {
