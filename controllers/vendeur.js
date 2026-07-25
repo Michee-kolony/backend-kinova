@@ -191,6 +191,191 @@ exports.inscrireVendeur = async (req, res) => {
 };
 
 // ==========================================
+// MODIFIER UN VENDEUR
+// ==========================================
+
+exports.modifierVendeur = async (req, res) => {
+    try {
+        const vendeurId = req.params.id;
+        const updates = req.body;
+
+        // ==========================================
+        // 1. VÉRIFICATION DES CHAMPS AUTORISÉS
+        // ==========================================
+
+        const allowedUpdates = [
+            'storeName',
+            'storeCategory',
+            'phoneNumber',
+            'address',
+            'paymentMethod',
+            'mobileMoneyNumber',
+            'status',
+            'isVerified'
+        ];
+
+        const isValidOperation = Object.keys(updates).every(key => 
+            allowedUpdates.includes(key)
+        );
+
+        if (!isValidOperation) {
+            return res.status(400).json({
+                success: false,
+                message: "Mise à jour invalide. Certains champs ne sont pas autorisés."
+            });
+        }
+
+        // ==========================================
+        // 2. VÉRIFIER SI LE VENDEUR EXISTE
+        // ==========================================
+
+        const vendeur = await Vendeur.findById(vendeurId);
+        
+        if (!vendeur) {
+            return res.status(404).json({
+                success: false,
+                message: "Vendeur introuvable"
+            });
+        }
+
+        // ==========================================
+        // 3. VÉRIFICATIONS SPÉCIFIQUES
+        // ==========================================
+
+        // Vérifier si le storeName est modifié et n'existe pas déjà
+        if (updates.storeName && updates.storeName !== vendeur.storeName) {
+            const storeNameExists = await Vendeur.findOne({
+                _id: { $ne: vendeurId },
+                storeName: { $regex: new RegExp(`^${updates.storeName.trim()}$`, 'i') }
+            });
+
+            if (storeNameExists) {
+                return res.status(409).json({
+                    success: false,
+                    message: "Ce nom de boutique est déjà utilisé par un autre vendeur"
+                });
+            }
+        }
+
+        // Vérifier si l'email est modifié (si vous autorisez la modification d'email)
+        if (updates.email && updates.email !== vendeur.email) {
+            const emailExists = await Vendeur.findOne({
+                _id: { $ne: vendeurId },
+                email: updates.email.toLowerCase().trim()
+            });
+
+            if (emailExists) {
+                return res.status(409).json({
+                    success: false,
+                    message: "Cette adresse e-mail est déjà utilisée par un autre vendeur"
+                });
+            }
+        }
+
+        // Vérifier le mode de paiement
+        if (updates.paymentMethod && !["mobile_money", "card"].includes(updates.paymentMethod)) {
+            return res.status(400).json({
+                success: false,
+                message: "Mode de paiement invalide"
+            });
+        }
+
+        // Vérifier le numéro Mobile Money
+        if (updates.paymentMethod === "mobile_money" && !updates.mobileMoneyNumber) {
+            return res.status(400).json({
+                success: false,
+                message: "Le numéro Mobile Money est obligatoire pour ce mode de paiement"
+            });
+        }
+
+        // ==========================================
+        // 4. APPLICATION DES MODIFICATIONS
+        // ==========================================
+
+        // Appliquer les mises à jour
+        Object.keys(updates).forEach(key => {
+            if (key === 'email') {
+                vendeur[key] = updates[key].toLowerCase().trim();
+            } else if (key === 'storeName' || key === 'storeCategory' || key === 'phoneNumber' || key === 'address') {
+                vendeur[key] = updates[key].trim();
+            } else if (key === 'mobileMoneyNumber') {
+                vendeur[key] = updates[key] ? updates[key].trim() : null;
+            } else {
+                vendeur[key] = updates[key];
+            }
+        });
+
+        // Mettre à jour la date de modification
+        vendeur.updatedAt = new Date();
+
+        // ==========================================
+        // 5. SAUVEGARDE
+        // ==========================================
+
+        await vendeur.save();
+
+        // ==========================================
+        // 6. RÉPONSE SUCCÈS
+        // ==========================================
+
+        return res.status(200).json({
+            success: true,
+            message: "Vendeur modifié avec succès",
+            vendeur: {
+                id: vendeur._id,
+                email: vendeur.email,
+                storeName: vendeur.storeName,
+                storeCategory: vendeur.storeCategory,
+                phoneNumber: vendeur.phoneNumber,
+                address: vendeur.address,
+                paymentMethod: vendeur.paymentMethod,
+                mobileMoneyNumber: vendeur.mobileMoneyNumber,
+                status: vendeur.status,
+                isVerified: vendeur.isVerified,
+                createdAt: vendeur.createdAt,
+                updatedAt: vendeur.updatedAt
+            }
+        });
+
+    } catch (error) {
+        console.error("❌ Erreur modification vendeur :", error);
+
+        // Erreur de validation Mongoose
+        if (error.name === 'ValidationError') {
+            const messages = Object.values(error.errors).map(err => err.message);
+            return res.status(400).json({
+                success: false,
+                message: messages.join('. ')
+            });
+        }
+
+        // Erreur de duplication (index unique)
+        if (error.code === 11000) {
+            const field = Object.keys(error.keyPattern)[0];
+            let message = 'Une valeur unique est déjà utilisée';
+            
+            if (field === 'email') {
+                message = 'Cette adresse e-mail est déjà utilisée';
+            } else if (field === 'storeName') {
+                message = 'Ce nom de boutique est déjà utilisé';
+            }
+            
+            return res.status(409).json({
+                success: false,
+                message: message
+            });
+        }
+
+        // Erreur générique
+        return res.status(500).json({
+            success: false,
+            message: "Une erreur est survenue lors de la modification du vendeur",
+            error: error.message
+        });
+    }
+};
+
+// ==========================================
 // CONNEXION VENDEUR
 // ==========================================
 

@@ -8,5 +8,6 @@ router.post("/register", vendeurController.inscrireVendeur);
 router.post("/login", vendeurController.loginVendeur);
 router.get("/", vendeurController.getVendeur);
 router.delete("/:id", vendeurController.supprimerVendeur);
+router.put('/:id', vendeurController.modifierVendeur);
 
 module.exports = router;
