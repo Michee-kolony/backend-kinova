@@ -429,7 +429,7 @@ exports.loginVendeur = (req, res) => {
                         email: vendeur.email,
                         role: "vendeur"
                     },
-                    "Kinova_Vendeur_JWT_Secret_2026_9fK3mP7xQ2vL8zN5",
+                    "RANDOM_TOKEN_ADMIN",
                     { expiresIn: "7d" }
                 );
 
