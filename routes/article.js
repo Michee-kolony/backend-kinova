@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const upload = require("../middlewares/upload");
-const anyUser = require("../middlewares/anyUser");
+const anyUser = require("../middlewares/anyuser");
 
 const articleController = require("../controllers/article");
 
