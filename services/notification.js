@@ -1,57 +1,58 @@
-
 const { messaging } = require("../config/firebase");
 
 exports.sendNotification = async (token, article) => {
 
-    const message = {
-        token: token,
+const message = {
+    token: token,
 
+    notification: {
+        title: article.nom,
+        body: article.description
+    },
+
+    data: {
+        articleId: article._id.toString()
+    },
+
+    // Configuration iOS sans image
+    apns: {
+        payload: {
+            aps: {
+                sound: "default",
+                badge: 1
+            }
+        }
+    },
+
+    // Android garde l'image si disponible
+    android: {}
+};
+
+// Ajouter l'image uniquement pour Android
+if (
+    article.images &&
+    Array.isArray(article.images) &&
+    article.images.length > 0 &&
+    article.images[0].startsWith("http")
+) {
+    const imageUrl = encodeURI(article.images[0]);
+
+    message.android = {
         notification: {
-            title: article.nom,
-            body: article.description
-        },
-
-        data: {
-            articleId: article._id.toString()
+            imageUrl: imageUrl
         }
     };
 
-    // Ajouter l'image si elle existe
-    if (
-        article.images &&
-        Array.isArray(article.images) &&
-        article.images.length > 0 &&
-        article.images[0].startsWith("http")
-    ) {
-        const imageUrl = encodeURI(article.images[0]);
+    // Pas d'image pour iOS
+}
 
-        // Android
-        message.android = {
-            notification: {
-                imageUrl: imageUrl
-            }
-        };
+try {
+    const response = await messaging.send(message);
+    console.log("Notification envoyée :", response);
+    return response;
+} catch (error) {
+    console.log("Erreur envoi notification :", error);
+    throw error;
+}
 
-        // iOS
-        message.apns = {
-            payload: {
-                aps: {
-                    alert: {
-                        title: article.nom,
-                        body: article.description
-                    },
-                    sound: "default",
-                    "mutable-content": 1
-                }
-            },
-            fcmOptions: {
-                imageUrl: imageUrl
-            }
-        };
-
-        // URL de l'image dans les données
-        message.data.image = imageUrl;
-    }
-
-    return messaging.send(message);
 };
