@@ -1,52 +1,57 @@
-const { messaging } = require("../config/firebase");
 
+const { messaging } = require("../config/firebase");
 
 exports.sendNotification = async (token, article) => {
 
     const message = {
-
         token: token,
 
         notification: {
-
             title: article.nom,
-
             body: article.description
-
         },
 
         data: {
-
             articleId: article._id.toString()
-
         }
-
     };
 
-
-    // Ajouter l'image seulement si elle existe
+    // Ajouter l'image si elle existe
     if (
         article.images &&
         Array.isArray(article.images) &&
         article.images.length > 0 &&
         article.images[0].startsWith("http")
     ) {
+        const imageUrl = encodeURI(article.images[0]);
 
+        // Android
         message.android = {
-
             notification: {
-
-                imageUrl: encodeURI(article.images[0])
-
+                imageUrl: imageUrl
             }
-
         };
 
+        // iOS
+        message.apns = {
+            payload: {
+                aps: {
+                    alert: {
+                        title: article.nom,
+                        body: article.description
+                    },
+                    sound: "default",
+                    "mutable-content": 1
+                }
+            },
+            fcmOptions: {
+                imageUrl: imageUrl
+            }
+        };
 
-        message.data.image = encodeURI(article.images[0]);
-
+        // URL de l'image dans les données
+        message.data.image = imageUrl;
     }
 
-return messaging.send(message);
-
+    return messaging.send(message);
 };
