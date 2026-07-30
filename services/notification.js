@@ -1,3 +1,4 @@
+
 const { messaging } = require("../config/firebase");
 
 exports.sendNotification = async (token, article) => {
@@ -23,6 +24,7 @@ exports.sendNotification = async (token, article) => {
         article.images.length > 0 &&
         article.images[0].startsWith("http")
     ) {
+
         const imageUrl = encodeURI(article.images[0]);
 
 
@@ -34,7 +36,7 @@ exports.sendNotification = async (token, article) => {
         };
 
 
-        // iOS avec image (Notification Service Extension nécessaire)
+        // iOS avec Notification Service Extension
         message.apns = {
             payload: {
                 aps: {
@@ -43,25 +45,23 @@ exports.sendNotification = async (token, article) => {
                         body: article.description
                     },
                     sound: "default",
+                    badge: 1,
                     "mutable-content": 1
                 }
-            },
-            fcmOptions: {
-                imageUrl: imageUrl
             }
         };
 
+        message.data.imageUrl = imageUrl;
 
-        // Envoyer aussi l'URL dans les données
-        message.data.image = imageUrl;
 
     } else {
 
-        // iOS sans image si aucune image disponible
+        // iOS sans image
         message.apns = {
             payload: {
                 aps: {
-                    sound: "default"
+                    sound: "default",
+                    badge: 1
                 }
             }
         };
@@ -70,12 +70,18 @@ exports.sendNotification = async (token, article) => {
 
 
     try {
+
         const response = await messaging.send(message);
+
         console.log("Notification envoyée :", response);
+
         return response;
 
+
     } catch (error) {
+
         console.log("Erreur envoi notification :", error);
+
         throw error;
     }
 
