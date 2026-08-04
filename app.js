@@ -15,6 +15,8 @@ const notificationRoutes = require("./routes/notification");
 const panierRoute = require('./routes/panier');
 const vendeurRoute = require('./routes/vendeur');
 const messageRoute = require('./routes/messages');
+const routeCommande = require('./routes/commande');
+const pawapayRoute = require("./routes/pawapay");
 
 mongoose.connect(
   'mongodb://micheekolony71%40gmail.com:1708roosevelt@187.55.225.170:27017/kinova?authSource=admin',
@@ -57,6 +59,8 @@ app.use("/notification", notificationRoutes);
 app.use('/panier', panierRoute);
 app.use('/vendeur', vendeurRoute);
 app.use('/messages', messageRoute);
+app.use('/commandes', routeCommande);
+app.use("/pawapay", pawapayRoute);
 
 
 
