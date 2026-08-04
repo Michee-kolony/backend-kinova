@@ -6,10 +6,7 @@ const {
 } = require("../controllers/pawapay");
 
 
-router.post(
-    "/webhook",
-    webhookPawaPay
-);
+router.post("/webhook", webhookPawaPay);
 
 
 module.exports = router;

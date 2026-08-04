@@ -1,9 +1,7 @@
 const Commande = require("../models/commande");
 const envoyerPaiementPawaPay = require("../services/pawapay");
 const axios = require("axios");
-
-
-
+const { randomUUID } = require("crypto");
 // =======================================
 // CREER UNE COMMANDE + PAWAPAY
 // =======================================
@@ -115,6 +113,7 @@ exports.creerCommande = async (req, res) => {
 
             codePromo,
 
+            depositId,
 
             modePaiement,
 
@@ -517,14 +516,9 @@ exports.getCommandeById = async(req,res)=>{
 
 };
 
-
-
-
 // =======================================
 // MODIFIER STATUT COMMANDE
 // =======================================
-
-
 exports.updateStatutCommande = async(req,res)=>{
 
 

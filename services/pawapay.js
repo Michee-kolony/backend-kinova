@@ -5,7 +5,7 @@ const { randomUUID } = require("crypto");
 const envoyerPaiementPawaPay = async (commande) => {
 
 
-    const depositId = randomUUID();
+    const depositId = commande.depositId || randomUUID();
 
 
     const telephone = commande.telephonePaiement
