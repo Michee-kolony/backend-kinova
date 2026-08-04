@@ -47,9 +47,6 @@ const envoyerPaiementPawaPay = async (commande) => {
         currency:commande.devise,
 
 
-        country:"COD",
-
-
         customerMessage:"Paiement Kinova",
 
 
