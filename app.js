@@ -4,8 +4,6 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const app = express();
 
-app.disable('x-powered-by');
-
 //mes  routes
 const routeClient = require('./routes/client');
 const routeAdministrateur = require('./routes/administrateur');
@@ -43,13 +41,7 @@ cron.schedule("0 */2 * * *", async ()=>{
 
 });
 
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
-  next();
-});
-
-app.use(bodyParser.json({ limit: '1mb' }));
-app.use(bodyParser.urlencoded({ extended: true, limit: '1mb' }));
+app.use(bodyParser.json());
 app.use(cors());
 
 app.get('/', (req, res, next) => {

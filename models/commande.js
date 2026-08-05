@@ -191,20 +191,6 @@ codePromo:{
 
 
 
-idempotencyKey:{
-
-
-    type:String,
-
-    default:null,
-
-    unique:true,
-
-    sparse:true
-
-},
-
-
 
 modePaiement:{
 
@@ -273,11 +259,7 @@ depositId:{
 
     type:String,
 
-    default:null,
-
-    unique:true,
-
-    sparse:true
+    default:null
 
 },
 

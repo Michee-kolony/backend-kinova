@@ -1,7 +1,7 @@
 const Commande = require("../models/commande");
 const envoyerPaiementPawaPay = require("../services/pawapay");
 const axios = require("axios");
-const { randomUUID } = require("crypto");
+
 // =======================================
 // CREER UNE COMMANDE + PAWAPAY
 // =======================================
@@ -33,47 +33,32 @@ exports.creerCommande = async (req, res) => {
 
         } = req.body;
 
-        const payloadFingerprint = JSON.stringify({
-            utilisateurId,
-            montantTotal,
-            montantReduction,
-            montantLivraison,
-            montantAPayer,
-            devise,
-            codePromo,
-            modePaiement,
-            operateurPaiement,
-            telephonePaiement,
-            adresseLivraison,
-            articles: Array.isArray(articles)
-                ? articles.map((article) => ({
-                    articleId: String(article.articleId || article._id || ""),
-                    quantite: article.quantite,
-                    prixFinal: article.prixFinal,
-                    couleurChoisie: article.couleurChoisie,
-                    tailleChoisie: article.tailleChoisie
-                }))
-                : articles
-        });
 
-        const idempotencyKey = req.body.idempotencyKey || req.body.clientReferenceId || req.body.numeroCommande || payloadFingerprint;
+
 
         // ==============================
         // VERIFICATION DOUBLON
         // ==============================
 
         const commandeExistante = await Commande.findOne({
-            $or: [
-                { idempotencyKey },
-                {
-                    utilisateurId,
-                    modePaiement: "MOBILE_MONEY",
-                    statutPaiement: {
-                        $in: ["EN_ATTENTE", "EN_COURS"]
-                    }
-                }
-            ]
-        }).sort({ createdAt: -1 });
+
+            utilisateurId,
+
+            modePaiement: "MOBILE_MONEY",
+
+            statutPaiement: {
+
+                $in: [
+
+                    "EN_ATTENTE",
+
+                    "EN_COURS"
+
+                ]
+
+            }
+
+        });
 
 
 
@@ -105,40 +90,47 @@ exports.creerCommande = async (req, res) => {
 
 
 
-        let commande;
+        const commande = await Commande.create({
 
-        try {
-            commande = await Commande.create({
-                numeroCommande,
-                utilisateurId,
-                articles,
-                montantTotal,
-                montantReduction,
-                montantLivraison,
-                montantAPayer,
-                devise,
-                codePromo,
-                idempotencyKey,
-                depositId,
-                modePaiement,
-                operateurPaiement,
-                telephonePaiement,
-                adresseLivraison,
-                statutPaiement: "EN_ATTENTE",
-                statutCommande: "EN_ATTENTE"
-            });
-        } catch (error) {
-            if (error?.code === 11000 && error?.keyPattern?.idempotencyKey) {
-                const existing = await Commande.findOne({ idempotencyKey }).sort({ createdAt: -1 });
-                if (existing) {
-                    return res.status(200).json({
-                        message: "Commande déjà créée, retour de la commande existante",
-                        commande: existing
-                    });
-                }
-            }
-            throw error;
-        }
+
+            numeroCommande,
+
+            utilisateurId,
+
+            articles,
+
+
+            montantTotal,
+
+            montantReduction,
+
+            montantLivraison,
+
+            montantAPayer,
+
+
+            devise,
+
+            codePromo,
+
+
+            modePaiement,
+
+            operateurPaiement,
+
+
+            telephonePaiement,
+
+
+            adresseLivraison,
+
+
+            statutPaiement:"EN_ATTENTE",
+
+            statutCommande:"EN_ATTENTE"
+
+
+        });
 
 
 
