@@ -7,12 +7,21 @@ const {
     getCommandesUtilisateur,
     getCommandeById,
     updateStatutCommande,
-    verifierPaiement
+    verifierPaiement,
+    getallCommandes,
+    getoneCommande
 } = require("../controllers/commande");
 
 
 // Créer une commande
 router.post("/", creerCommande);
+
+//Recupère toutes les commandes
+// ADMIN : toutes les commandes
+router.get("/admin/", getallCommandes);
+
+//RECUPERE UNE COMMANDE PAR ID
+router.get("/admin/:id", getoneCommande);
 
 
 router.get('/verifier-paiement/:id', verifierPaiement);
