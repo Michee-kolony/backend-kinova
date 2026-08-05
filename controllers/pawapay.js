@@ -51,8 +51,14 @@ exports.webhookPawaPay = async(req,res)=>{
 
         });
 
-
-
+        if (commande?.statutPaiement === "PAYE" && commande?.statutCommande === "CONFIRMEE") {
+            console.log(`Commande ${commande.numeroCommande} déjà confirmée, webhook PawaPay ignoré`);
+            return res.status(200).json({
+                message: "Webhook déjà traité",
+                depositId,
+                status: commande.metadata?.pawapayStatus || paiement.status
+            });
+        }
 
         if(!commande){
 
