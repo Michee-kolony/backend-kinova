@@ -4,54 +4,472 @@ const axios = require("axios");
 const transporter = require("../config/mail");
 
 
-//Fonction d'envoie MAIL
+// Fonction d'envoi MAIL COMMANDE
 const envoyerMailCommande = async (commande) => {
+
     try {
 
-        const statut =
-            commande.statutPaiement === "PAYE"
-                ? "Paiement confirmé"
-                : "Paiement non confirmé";
+
+        const paiementConfirme =
+            commande.statutPaiement === "PAYE";
+
+
+
+        const statutTexte = paiementConfirme
+            ? "PAIEMENT CONFIRMÉ"
+            : "PAIEMENT NON CONFIRMÉ";
+
+
+
+        const statutCouleur = paiementConfirme
+            ? "#16a34a"
+            : "#dc2626";
+
+
 
         await transporter.sendMail({
 
+
             from: `"Kinova" <${process.env.SMTP_USER}>`,
+
 
             to: commande.emailUtilisateur,
 
-            subject: `Votre commande ${commande.numeroCommande}`,
+
+            subject: `Commande ${commande.numeroCommande} - Kinova`,
+
+
 
             html: `
-                <h2>Merci pour votre commande.</h2>
 
-                <p><strong>Numéro :</strong> ${commande.numeroCommande}</p>
+<!DOCTYPE html>
 
-                <p><strong>Montant :</strong> ${commande.montantAPayer} ${commande.devise}</p>
+<html>
 
-                <p><strong>Mode de paiement :</strong> ${commande.modePaiement}</p>
+<head>
 
-                <p><strong>Opérateur :</strong> ${commande.operateurPaiement}</p>
+<meta charset="UTF-8">
 
-                <p><strong>Téléphone :</strong> ${commande.telephonePaiement}</p>
+<title>Commande Kinova</title>
 
-                <p><strong>Statut paiement :</strong> ${statut}</p>
+</head>
 
-                <p><strong>Statut commande :</strong> ${commande.statutCommande}</p>
 
-                <br>
+<body style="
+margin:0;
+padding:0;
+background:#f3f4f6;
+font-family:Arial,Helvetica,sans-serif;
+">
 
-                <p>Merci de votre confiance.</p>
 
-                <b>Equipe Kinova</b>
-            `
+<div style="
+max-width:700px;
+margin:30px auto;
+background:white;
+padding:40px;
+border-radius:12px;
+box-shadow:0 5px 20px rgba(0,0,0,0.08);
+position:relative;
+">
+
+
+
+<!-- LOGO -->
+
+<div style="
+text-align:center;
+margin-bottom:30px;
+">
+
+<div style="
+width:120px;
+height:60px;
+margin:auto;
+background:#ff7a00;
+border-radius:10px;
+display:flex;
+align-items:center;
+justify-content:center;
+color:white;
+font-size:28px;
+font-weight:bold;
+">
+
+KINOVA
+
+</div>
+
+
+<p style="
+color:#777;
+font-size:14px;
+">
+Marketplace Kinova
+</p>
+
+
+</div>
+
+
+
+
+
+<!-- CACHET STATUT -->
+
+<div style="
+position:absolute;
+right:40px;
+top:40px;
+transform:rotate(-15deg);
+border:3px solid ${statutCouleur};
+color:${statutCouleur};
+padding:12px 20px;
+font-weight:bold;
+font-size:14px;
+border-radius:8px;
+">
+
+${statutTexte}
+
+</div>
+
+
+
+
+
+
+
+<h2 style="
+color:#111827;
+">
+
+Merci pour votre commande
+
+</h2>
+
+
+
+<p>
+Bonjour,
+</p>
+
+
+<p>
+Votre commande a bien été enregistrée sur Kinova.
+Voici le résumé de votre achat :
+</p>
+
+
+
+
+
+<hr style="
+border:none;
+border-top:1px solid #eee;
+margin:30px 0;
+">
+
+
+
+
+
+
+<table width="100%" cellpadding="10" style="
+border-collapse:collapse;
+font-size:15px;
+">
+
+
+<tr style="
+background:#f9fafb;
+">
+
+<td>
+<strong>Numéro commande</strong>
+</td>
+
+<td>
+${commande.numeroCommande}
+</td>
+
+</tr>
+
+
+
+<tr>
+
+<td>
+<strong>Date</strong>
+</td>
+
+<td>
+${new Date(commande.createdAt).toLocaleDateString()}
+</td>
+
+</tr>
+
+
+
+<tr style="
+background:#f9fafb;
+">
+
+<td>
+<strong>Montant total</strong>
+</td>
+
+<td>
+${commande.montantAPayer} ${commande.devise}
+</td>
+
+</tr>
+
+
+
+
+<tr>
+
+<td>
+<strong>Moyen paiement</strong>
+</td>
+
+<td>
+${commande.modePaiement}
+</td>
+
+</tr>
+
+
+
+
+<tr style="
+background:#f9fafb;
+">
+
+<td>
+<strong>Opérateur</strong>
+</td>
+
+<td>
+${commande.operateurPaiement}
+</td>
+
+</tr>
+
+
+
+<tr>
+
+<td>
+<strong>Téléphone paiement</strong>
+</td>
+
+<td>
+${commande.telephonePaiement}
+</td>
+
+</tr>
+
+
+
+<tr style="
+background:#f9fafb;
+">
+
+<td>
+<strong>Statut paiement</strong>
+</td>
+
+<td style="
+color:${statutCouleur};
+font-weight:bold;
+">
+
+${statutTexte}
+
+</td>
+
+</tr>
+
+
+
+<tr>
+
+<td>
+<strong>Statut commande</strong>
+</td>
+
+<td>
+${commande.statutCommande}
+</td>
+
+</tr>
+
+
+</table>
+
+
+
+
+
+
+<hr style="
+border:none;
+border-top:1px solid #eee;
+margin:30px 0;
+">
+
+
+
+
+
+<h3>
+Articles commandés
+</h3>
+
+
+<table width="100%" cellpadding="10" style="
+border-collapse:collapse;
+">
+
+
+<tr style="
+background:#111827;
+color:white;
+">
+
+<td>
+Article
+</td>
+
+<td>
+Quantité
+</td>
+
+<td>
+Prix
+</td>
+
+</tr>
+
+
+
+${
+commande.articles.map(article => `
+
+
+<tr style="
+border-bottom:1px solid #eee;
+">
+
+<td>
+${article.nom}
+</td>
+
+
+<td>
+${article.quantite}
+</td>
+
+
+<td>
+${article.prixFinal} ${commande.devise}
+</td>
+
+
+</tr>
+
+
+`).join("")
+}
+
+
+
+</table>
+
+
+
+
+
+
+
+<div style="
+margin-top:40px;
+padding:20px;
+background:#fff7ed;
+border-radius:10px;
+color:#7c2d12;
+">
+
+
+<strong>Information paiement :</strong>
+
+<br><br>
+
+
+${
+paiementConfirme
+?
+"Votre paiement a été confirmé. Votre commande sera préparée prochainement."
+:
+"Votre paiement est en attente de confirmation. Nous vous informerons dès validation."
+}
+
+
+</div>
+
+
+
+
+
+
+
+<p style="
+margin-top:40px;
+font-size:14px;
+color:#6b7280;
+text-align:center;
+">
+
+Merci d'avoir choisi Kinova.
+
+<br>
+
+Equipe Kinova
+
+</p>
+
+
+
+
+
+</div>
+
+
+</body>
+
+</html>
+
+`
 
         });
 
-    } catch (err) {
 
-        console.error("Erreur envoi mail :", err.message);
+
+        console.log("Email commande envoyé");
+
 
     }
+    catch(err){
+
+        console.error(
+            "Erreur envoi mail :",
+            err.message
+        );
+
+    }
+
 };
 
 // =======================================
