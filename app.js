@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const app = express();
-
+const path = require("path");
 //mes  routes
 const routeClient = require('./routes/client');
 const routeAdministrateur = require('./routes/administrateur');
@@ -43,6 +43,12 @@ cron.schedule("0 */2 * * *", async ()=>{
 
 app.use(bodyParser.json());
 app.use(cors());
+app.use(
+    "/images",
+    express.static(
+        path.join(__dirname, "public")
+    )
+);
 
 app.get('/', (req, res, next) => {
   res.status(200).json({

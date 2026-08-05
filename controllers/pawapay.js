@@ -1,6 +1,11 @@
 const Commande = require("../models/commande");
 const transporter = require("../config/mail");
 
+
+// =======================================
+// ENVOYER MAIL CONFIRMATION PAIEMENT
+// =======================================
+
 async function envoyerMailConfirmation(commande) {
 
 
@@ -19,6 +24,7 @@ to:commande.emailUtilisateur,
 subject:`Paiement confirmé - ${commande.numeroCommande}`,
 
 
+
 html:`
 
 
@@ -29,9 +35,11 @@ html:`
 
 <body style="
 margin:0;
+padding:0;
 background:#f3f4f6;
-font-family:Arial;
+font-family:Arial,Helvetica,sans-serif;
 ">
+
 
 
 <div style="
@@ -40,9 +48,14 @@ margin:40px auto;
 background:white;
 border-radius:15px;
 overflow:hidden;
+box-shadow:0 5px 20px rgba(0,0,0,0.1);
 ">
 
 
+
+
+
+<!-- HEADER -->
 
 <div style="
 background:#16a34a;
@@ -52,48 +65,81 @@ color:white;
 ">
 
 
+
+
+
 <div style="
 background:white;
-color:#16a34a;
-width:100px;
-height:100px;
+width:110px;
+height:110px;
 border-radius:50%;
 margin:auto;
 display:flex;
 align-items:center;
 justify-content:center;
-font-size:25px;
-font-weight:bold;
+overflow:hidden;
 ">
 
-LOGO
+
+<img 
+
+src="https://kinova-backend.tech/images/icon.png"
+
+alt="Logo Kinova"
+
+style="
+width:100%;
+height:100%;
+object-fit:contain;
+"
+
+>
+
 
 </div>
 
 
-<h1>
+
+
+<h1 style="
+margin:15px 0 5px;
+">
+
 KINOVA
+
 </h1>
 
 
-<h2>
+
+<h2 style="
+margin:0;
+">
+
 Paiement confirmé
+
 </h2>
+
 
 
 </div>
 
 
 
+
+
+
+<!-- CONTENU -->
 
 <div style="
 padding:35px;
 ">
 
 
+
 <p>
 Bonjour,
 </p>
+
 
 
 <p>
@@ -102,15 +148,23 @@ Votre paiement a été confirmé avec succès.
 
 
 
+
+
 <div style="
-border:1px solid #eee;
+border:1px solid #eeeeee;
 padding:20px;
 border-radius:10px;
 ">
 
 
+
+
+
 <p>
-<strong>Commande :</strong>
+
+<strong>
+Commande :
+</strong>
 
 <br>
 
@@ -120,11 +174,17 @@ ${commande.numeroCommande}
 
 
 
+
+
 <p>
 
-<strong>Montant payé :</strong>
+<strong>
+Montant payé :
+</strong>
+
 
 <br>
+
 
 <span style="
 font-size:25px;
@@ -140,10 +200,17 @@ ${commande.montantAPayer} ${commande.devise}
 
 
 
+
+
 <p>
-<strong>Statut paiement :</strong>
+
+<strong>
+Statut paiement :
+</strong>
+
 
 <br>
+
 
 <span style="
 color:#16a34a;
@@ -154,25 +221,48 @@ PAYE
 
 </span>
 
+
 </p>
+
+
+
 
 
 
 <p>
 
-<strong>Statut commande :</strong>
+<strong>
+Statut commande :
+</strong>
+
 
 <br>
 
+
+<span style="
+color:#16a34a;
+font-weight:bold;
+">
+
 CONFIRMEE
 
+</span>
+
+
 </p>
+
+
+
 
 
 </div>
 
 
 
+
+
+
+<!-- CACHE -->
 
 <div style="
 margin-top:30px;
@@ -200,8 +290,16 @@ PAYÉ
 
 
 
+
+
 </div>
 
+
+
+
+
+
+<!-- FOOTER -->
 
 
 <div style="
@@ -215,11 +313,20 @@ text-align:center;
 Merci d'avoir acheté sur Kinova.
 
 
+<br><br>
+
+
+Equipe Kinova
+
+
 </div>
 
 
 
+
+
 </div>
+
 
 
 </body>
@@ -237,6 +344,7 @@ console.log("Mail confirmation envoyé");
 
 
 }
+
 catch(error){
 
 
@@ -250,6 +358,16 @@ error.message
 
 
 }
+
+
+
+
+
+
+// =======================================
+// WEBHOOK PAWAPAY
+// =======================================
+
 
 exports.webhookPawaPay = async(req,res)=>{
 
@@ -317,8 +435,9 @@ exports.webhookPawaPay = async(req,res)=>{
 
 
         // garder ancien statut
-        const ancienStatut =
+        const ancienStatut = 
         commande.statutPaiement;
+
 
 
 
@@ -343,15 +462,18 @@ exports.webhookPawaPay = async(req,res)=>{
 
 
 
-        if(paiement.status==="COMPLETED"){
+        if(paiement.status === "COMPLETED"){
+
 
 
             commande.statutPaiement =
             "PAYE";
 
 
+
             commande.statutCommande =
             "CONFIRMEE";
+
 
 
             commande.providerTransactionId =
@@ -365,7 +487,8 @@ exports.webhookPawaPay = async(req,res)=>{
 
 
 
-        if(paiement.status==="FAILED"){
+
+        if(paiement.status === "FAILED"){
 
 
             commande.statutPaiement =
@@ -373,6 +496,7 @@ exports.webhookPawaPay = async(req,res)=>{
 
 
         }
+
 
 
 
@@ -389,15 +513,24 @@ exports.webhookPawaPay = async(req,res)=>{
 
 
 
-        // Envoyer le mail une seule fois
+
+        // Envoyer le mail seulement une fois
+
         if(
-            paiement.status==="COMPLETED" &&
+
+            paiement.status === "COMPLETED" &&
+
             ancienStatut !== "PAYE"
+
         ){
+
 
             await envoyerMailConfirmation(commande);
 
+
         }
+
+
 
 
 
@@ -407,6 +540,8 @@ exports.webhookPawaPay = async(req,res)=>{
         console.log(
             "Commande mise à jour automatiquement"
         );
+
+
 
 
 
@@ -420,14 +555,21 @@ exports.webhookPawaPay = async(req,res)=>{
 
 
 
+
     }
+
     catch(error){
 
 
+
         console.log(
+
             "ERREUR WEBHOOK PAWAPAY",
+
             error.message
+
         );
+
 
 
         return res.status(500).json({
@@ -435,6 +577,7 @@ exports.webhookPawaPay = async(req,res)=>{
             message:"Erreur webhook"
 
         });
+
 
 
     }
