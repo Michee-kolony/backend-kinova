@@ -1,6 +1,58 @@
 const Commande = require("../models/commande");
 const envoyerPaiementPawaPay = require("../services/pawapay");
 const axios = require("axios");
+const transporter = require("../config/mail");
+
+
+//Fonction d'envoie MAIL
+const envoyerMailCommande = async (commande) => {
+    try {
+
+        const statut =
+            commande.statutPaiement === "PAYE"
+                ? "Paiement confirmé"
+                : "Paiement non confirmé";
+
+        await transporter.sendMail({
+
+            from: `"Kinova" <${process.env.SMTP_USER}>`,
+
+            to: commande.emailUtilisateur,
+
+            subject: `Votre commande ${commande.numeroCommande}`,
+
+            html: `
+                <h2>Merci pour votre commande.</h2>
+
+                <p><strong>Numéro :</strong> ${commande.numeroCommande}</p>
+
+                <p><strong>Montant :</strong> ${commande.montantAPayer} ${commande.devise}</p>
+
+                <p><strong>Mode de paiement :</strong> ${commande.modePaiement}</p>
+
+                <p><strong>Opérateur :</strong> ${commande.operateurPaiement}</p>
+
+                <p><strong>Téléphone :</strong> ${commande.telephonePaiement}</p>
+
+                <p><strong>Statut paiement :</strong> ${statut}</p>
+
+                <p><strong>Statut commande :</strong> ${commande.statutCommande}</p>
+
+                <br>
+
+                <p>Merci de votre confiance.</p>
+
+                <b>Equipe Kinova</b>
+            `
+
+        });
+
+    } catch (err) {
+
+        console.error("Erreur envoi mail :", err.message);
+
+    }
+};
 
 // =======================================
 // CREER UNE COMMANDE + PAWAPAY
@@ -14,6 +66,8 @@ exports.creerCommande = async (req, res) => {
         const {
 
             utilisateurId,
+            emailUtilisateur,
+
             articles,
 
             montantTotal,
@@ -35,6 +89,28 @@ exports.creerCommande = async (req, res) => {
 
 
 
+        // ==============================
+        // VALIDATION
+        // ==============================
+
+        if(
+            !utilisateurId ||
+            !emailUtilisateur ||
+            !articles ||
+            articles.length === 0
+        ){
+
+            return res.status(400).json({
+
+                message:"Informations commande incomplètes"
+
+            });
+
+        }
+
+
+
+
 
         // ==============================
         // VERIFICATION DOUBLON
@@ -44,11 +120,11 @@ exports.creerCommande = async (req, res) => {
 
             utilisateurId,
 
-            modePaiement: "MOBILE_MONEY",
+            modePaiement:"MOBILE_MONEY",
 
-            statutPaiement: {
+            statutPaiement:{
 
-                $in: [
+                $in:[
 
                     "EN_ATTENTE",
 
@@ -62,7 +138,7 @@ exports.creerCommande = async (req, res) => {
 
 
 
-        if (commandeExistante) {
+        if(commandeExistante){
 
 
             return res.status(200).json({
@@ -70,7 +146,7 @@ exports.creerCommande = async (req, res) => {
                 message:
                 "Une commande est déjà en cours de paiement",
 
-                commande: commandeExistante
+                commande:commandeExistante
 
             });
 
@@ -80,8 +156,9 @@ exports.creerCommande = async (req, res) => {
 
 
 
+
         // ==============================
-        // CREATION COMMANDE
+        // CREATION NUMERO COMMANDE
         // ==============================
 
 
@@ -90,14 +167,28 @@ exports.creerCommande = async (req, res) => {
 
 
 
+
+
+
+        // ==============================
+        // CREATION COMMANDE MONGODB
+        // ==============================
+
+
         const commande = await Commande.create({
 
 
             numeroCommande,
 
+
             utilisateurId,
 
+
+            emailUtilisateur,
+
+
             articles,
+
 
 
             montantTotal,
@@ -109,9 +200,11 @@ exports.creerCommande = async (req, res) => {
             montantAPayer,
 
 
+
             devise,
 
             codePromo,
+
 
 
             modePaiement,
@@ -119,13 +212,17 @@ exports.creerCommande = async (req, res) => {
             operateurPaiement,
 
 
+
             telephonePaiement,
+
 
 
             adresseLivraison,
 
 
+
             statutPaiement:"EN_ATTENTE",
+
 
             statutCommande:"EN_ATTENTE"
 
@@ -136,8 +233,11 @@ exports.creerCommande = async (req, res) => {
 
 
 
+
+
+
         // ==============================
-        // LANCEMENT PAWAPAY
+        // APPEL PAWAPAY
         // ==============================
 
 
@@ -148,9 +248,9 @@ exports.creerCommande = async (req, res) => {
 
 
                 const paiement =
-                await envoyerPaiementPawaPay(
-                    commande
-                );
+                await envoyerPaiementPawaPay(commande);
+
+
 
 
 
@@ -164,14 +264,20 @@ exports.creerCommande = async (req, res) => {
 
 
 
+
+
                 commande.metadata = {
 
 
+                    ...commande.metadata,
+
+
                     pawapayStatus:
-                    paiement.status || "CREATED"
+                    paiement.status || "ACCEPTED"
 
 
                 };
+
 
 
 
@@ -179,7 +285,9 @@ exports.creerCommande = async (req, res) => {
 
 
 
-            }catch(error){
+
+            }
+            catch(error){
 
 
 
@@ -196,18 +304,17 @@ exports.creerCommande = async (req, res) => {
                 );
 
 
-                console.log(
-                    "===================================="
-                );
-
-
 
                 commande.statutPaiement =
                 "ECHEC";
 
 
 
+
                 commande.metadata = {
+
+
+                    ...commande.metadata,
 
 
                     pawapayError:
@@ -219,10 +326,12 @@ exports.creerCommande = async (req, res) => {
 
 
 
+
                 await commande.save();
 
 
             }
+
 
 
         }
@@ -230,7 +339,27 @@ exports.creerCommande = async (req, res) => {
 
 
 
-        res.status(201).json({
+
+
+        // ==============================
+        // ENVOI MAIL CLIENT
+        // ==============================
+
+
+        await envoyerMailCommande(commande);
+
+
+
+
+
+
+
+        // ==============================
+        // REPONSE
+        // ==============================
+
+
+        return res.status(201).json({
 
             message:"Commande créée",
 
@@ -240,13 +369,20 @@ exports.creerCommande = async (req, res) => {
 
 
 
-    }catch(error){
+
+    }
+    catch(error){
 
 
-        console.log(error);
+
+        console.log(
+            "ERREUR CREATION COMMANDE :",
+            error.message
+        );
 
 
-        res.status(500).json({
+
+        return res.status(500).json({
 
             message:"Erreur serveur",
 
@@ -255,10 +391,14 @@ exports.creerCommande = async (req, res) => {
         });
 
 
+
     }
 
 
 };
+
+
+
 // =======================================
 // VERIFIER PAIEMENT PAWAPAY
 // =======================================

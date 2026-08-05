@@ -1,4 +1,80 @@
 const Commande = require("../models/commande");
+const transporter = require("../config/mail");
+
+
+async function envoyerMailConfirmation(commande) {
+
+    try {
+
+
+        await transporter.sendMail({
+
+            from: `"Kinova" <${process.env.SMTP_USER}>`,
+
+            to: commande.emailUtilisateur,
+
+            subject:`Paiement confirmé - ${commande.numeroCommande}`,
+
+            html:`
+
+            <h2>Paiement confirmé</h2>
+
+            <p>Bonjour,</p>
+
+            <p>Votre paiement a été confirmé avec succès.</p>
+
+            <hr>
+
+            <p>
+            <strong>Commande :</strong>
+            ${commande.numeroCommande}
+            </p>
+
+
+            <p>
+            <strong>Montant :</strong>
+            ${commande.montantAPayer} ${commande.devise}
+            </p>
+
+
+            <p>
+            <strong>Statut paiement :</strong>
+            PAYE
+            </p>
+
+
+            <p>
+            <strong>Statut commande :</strong>
+            CONFIRMEE
+            </p>
+
+
+            <hr>
+
+            <p>
+            Merci d'avoir acheté sur Kinova.
+            </p>
+
+            `
+
+        });
+
+
+        console.log("Mail confirmation envoyé");
+
+
+    }
+    catch(error){
+
+        console.log(
+            "Erreur mail confirmation :",
+            error.message
+        );
+
+    }
+
+}
+
 
 
 
@@ -23,8 +99,7 @@ exports.webhookPawaPay = async(req,res)=>{
 
 
 
-        const depositId =
-        paiement.depositId;
+        const depositId = paiement.depositId;
 
 
 
@@ -37,19 +112,18 @@ exports.webhookPawaPay = async(req,res)=>{
 
             });
 
-
         }
 
 
 
 
 
-        const commande =
-        await Commande.findOne({
+        const commande = await Commande.findOne({
 
             depositId
 
         });
+
 
 
 
@@ -63,8 +137,16 @@ exports.webhookPawaPay = async(req,res)=>{
 
             });
 
-
         }
+
+
+
+
+
+        // garder ancien statut
+        const ancienStatut =
+        commande.statutPaiement;
+
 
 
 
@@ -81,6 +163,7 @@ exports.webhookPawaPay = async(req,res)=>{
 
 
         };
+
 
 
 
@@ -108,6 +191,7 @@ exports.webhookPawaPay = async(req,res)=>{
 
 
 
+
         if(paiement.status==="FAILED"){
 
 
@@ -121,7 +205,28 @@ exports.webhookPawaPay = async(req,res)=>{
 
 
 
+
+
         await commande.save();
+
+
+
+
+
+
+
+
+        // Envoyer le mail une seule fois
+        if(
+            paiement.status==="COMPLETED" &&
+            ancienStatut !== "PAYE"
+        ){
+
+            await envoyerMailConfirmation(commande);
+
+        }
+
+
 
 
 
@@ -132,7 +237,7 @@ exports.webhookPawaPay = async(req,res)=>{
 
 
 
-        res.status(200).json({
+        return res.status(200).json({
 
             message:"Webhook reçu"
 
@@ -142,8 +247,8 @@ exports.webhookPawaPay = async(req,res)=>{
 
 
 
-    }catch(error){
-
+    }
+    catch(error){
 
 
         console.log(
@@ -152,12 +257,11 @@ exports.webhookPawaPay = async(req,res)=>{
         );
 
 
-        res.status(500).json({
+        return res.status(500).json({
 
             message:"Erreur webhook"
 
         });
-
 
 
     }
