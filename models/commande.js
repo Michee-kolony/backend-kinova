@@ -38,7 +38,7 @@ const commandeArticleSchema = new mongoose.Schema(
         required: true
     },
 
-    // ✅ Nouveau : statut de livraison de chaque article
+    //Nouveau : statut de livraison de chaque article
     statutLivraison: {
         type: String,
         enum: [

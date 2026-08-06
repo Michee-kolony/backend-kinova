@@ -851,6 +851,83 @@ exports.getallCommandes = async (req,res)=>{
 
 };
 
+
+exports.updateStatutArticleCommande = async (req, res) => {
+
+    try {
+
+        const { id } = req.params;
+        const { articleId, statutLivraison } = req.body;
+
+
+        // Vérification statut
+        const statutsAutorises = ["LIVRE", "NON_LIVRE"];
+
+        if (!statutsAutorises.includes(statutLivraison)) {
+            return res.status(400).json({
+                message: "Statut livraison invalide"
+            });
+        }
+
+        //Récupérer le vendeurId depuis le body (envoyé par le frontend)
+        const vendeurId = req.body.vendeurId || req.user?.vendeurId || req.user?._id || req.user?.id;
+
+        if (!vendeurId) {
+            return res.status(400).json({
+                message: "Vendeur non identifié"
+            });
+        }
+
+        // Vérifier si la commande existe
+        const commande = await Commande.findById(id);
+
+        if (!commande) {
+            return res.status(404).json({
+                message: "Commande introuvable"
+            });
+        }
+
+        // Trouver l'article correspondant au vendeur
+        const article = commande.articles.find(
+            item =>
+                item.articleId.toString() === articleId &&
+                item.vendeurId.toString() === vendeurId.toString()
+        );
+
+
+        if (!article) {
+            return res.status(403).json({
+                message: "Vous n'avez pas accès à cet article"
+            });
+        }
+
+        // Modification du statut livraison
+        article.statutLivraison = statutLivraison;
+
+        await commande.save();
+
+        console.log('✅ Statut mis à jour avec succès');
+
+        res.status(200).json({
+            message: "Statut livraison modifié avec succès",
+            article: {
+                articleId: article.articleId,
+                nom: article.nom,
+                statutLivraison: article.statutLivraison
+            }
+        });
+
+    } catch(error) {
+        console.error('❌ Erreur serveur détaillée:', error);
+        res.status(500).json({
+            message: "Erreur serveur",
+            error: error.message,
+            stack: error.stack
+        });
+    }
+
+};
+
 // =======================================
 // RÉCUPÉRER UNE COMMANDE PAR ID
 // =======================================

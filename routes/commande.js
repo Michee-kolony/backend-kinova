@@ -9,7 +9,8 @@ const {
     updateStatutCommande,
     verifierPaiement,
     getallCommandes,
-    getoneCommande
+    getoneCommande,
+    updateStatutArticleCommande
 } = require("../controllers/commande");
 
 
@@ -23,10 +24,10 @@ router.get("/admin/", getallCommandes);
 //RECUPERE UNE COMMANDE PAR ID
 router.get("/admin/:id", getoneCommande);
 
+//MODIFIER LE STATUT D'UNE COMMANDE
+router.put("/admin/:id", updateStatutArticleCommande);
 
 router.get('/verifier-paiement/:id', verifierPaiement);
-
-
 
 // Récupérer toutes les commandes d'un utilisateur
 router.get("/utilisateur/:utilisateurId", getCommandesUtilisateur);
