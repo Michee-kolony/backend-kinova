@@ -482,256 +482,238 @@ Equipe Kinova
 
 exports.creerCommande = async (req, res) => {
 
-    try {
+try {
 
-        const {
+    const {
 
-            utilisateurId,
-            emailUtilisateur,
+        utilisateurId,
+        emailUtilisateur,
 
-            articles,
+        articles,
 
-            montantTotal,
-            montantReduction,
-            montantLivraison,
-            montantAPayer,
+        montantTotal,
+        montantReduction,
+        montantLivraison,
+        montantAPayer,
 
-            codePromo,
+        codePromo,
 
-            modePaiement,
-            operateurPaiement,
+        modePaiement,
+        operateurPaiement,
 
-            telephonePaiement,
+        telephonePaiement,
 
-            adresseLivraison
+        adresseLivraison
 
-        } = req.body;
-
-
-
-        // ==============================
-        // VALIDATION
-        // ==============================
-
-        if(
-            !utilisateurId ||
-            !emailUtilisateur ||
-            !articles ||
-            articles.length === 0
-        ){
-
-            return res.status(400).json({
-
-                message:"Informations commande incomplètes"
-
-            });
-
-        }
+    } = req.body;
 
 
 
-        // ==============================
-        // VERIFICATION DOUBLON
-        // ==============================
+    // ==============================
+    // VALIDATION
+    // ==============================
 
-        const commandeExistante = await Commande.findOne({
+    if(
+        !utilisateurId ||
+        !emailUtilisateur ||
+        !articles ||
+        articles.length === 0
+    ){
 
-            utilisateurId,
+        return res.status(400).json({
 
-            modePaiement:"MOBILE_MONEY",
-
-            statutPaiement:{
-
-                $in:[
-
-                    "EN_ATTENTE",
-
-                    "EN_COURS"
-
-                ]
-
-            }
+            message:"Informations commande incomplètes"
 
         });
 
-
-
-        if(commandeExistante){
-
-            return res.status(200).json({
-
-                message:
-                "Une commande est déjà en cours de paiement",
-
-                commande:commandeExistante
-
-            });
-
-        }
+    }
 
 
 
+    // ==============================
+    // CONTROLE MONTANT USD PAWAPAY
+    // ==============================
+
+    const montant = Number(montantAPayer);
 
 
-        // ==============================
-        // CREATION NUMERO COMMANDE
-        // ==============================
+    if(isNaN(montant)){
 
-        const numeroCommande =
-        "KINOVA-" + Date.now();
+        return res.status(400).json({
 
-
-
-
-
-        // ==============================
-        // CREATION COMMANDE
-        // DEVise FORCEE USD
-        // ==============================
-
-        const commande = await Commande.create({
-
-            numeroCommande,
-
-            utilisateurId,
-
-            emailUtilisateur,
-
-            articles,
-
-
-            montantTotal,
-
-            montantReduction,
-
-            montantLivraison,
-
-            montantAPayer,
-
-
-            // Toujours en USD
-            devise:"USD",
-
-
-            codePromo,
-
-
-            modePaiement,
-
-            operateurPaiement,
-
-
-            telephonePaiement,
-
-
-            adresseLivraison,
-
-
-            statutPaiement:"EN_ATTENTE",
-
-            statutCommande:"EN_ATTENTE"
-
+            message:"Montant invalide"
 
         });
 
+    }
+
+
+
+    // Minimum Sandbox USD
+    if(montant <= 0.5){
+
+        return res.status(400).json({
+
+            message:"Le montant minimum est supérieur à 0.5 USD"
+
+        });
+
+    }
+
+
+
+    // Maximum Sandbox USD RDC
+    if(montant >= 2500){
+
+        return res.status(400).json({
+
+            message:"Le montant maximum autorisé est de 2499 USD"
+
+        });
+
+    }
 
 
 
 
 
-        // ==============================
-        // PAWAPAY
-        // ==============================
+    // ==============================
+    // VERIFICATION DOUBLON
+    // ==============================
 
-        if(modePaiement === "MOBILE_MONEY"){
+    const commandeExistante = await Commande.findOne({
 
+        utilisateurId,
 
-            try{
+        modePaiement:"MOBILE_MONEY",
 
+        statutPaiement:{
 
-                const paiement =
-                await envoyerPaiementPawaPay(commande);
+            $in:[
 
+                "EN_ATTENTE",
 
+                "EN_COURS"
 
+            ]
 
-                // Sécurité si PawaPay refuse directement
+        }
 
-                if(paiement.status === "REJECTED"){
-
-
-                    await Commande.findByIdAndDelete(
-                        commande._id
-                    );
-
-
-                    return res.status(400).json({
-
-                        message:
-                        paiement.failureReason?.failureMessage ||
-                        "Paiement refusé"
-
-                    });
-
-
-                }
+    });
 
 
 
+    if(commandeExistante){
 
+        return res.status(200).json({
 
-                commande.depositId =
-                paiement.depositId;
+            message:
+            "Une commande est déjà en cours de paiement",
 
+            commande:commandeExistante
 
+        });
 
-                commande.statutPaiement =
-                "EN_COURS";
+    }
 
 
 
 
 
-                commande.metadata = {
+    // ==============================
+    // NUMERO COMMANDE
+    // ==============================
 
-
-                    ...commande.metadata,
-
-
-                    pawapayStatus:
-                    paiement.status || "ACCEPTED"
-
-
-                };
+    const numeroCommande =
+    "KINOVA-" + Date.now();
 
 
 
 
-                await commande.save();
 
 
 
-            }
+    // ==============================
+    // CREATION COMMANDE USD
+    // ==============================
+
+    const commande = await Commande.create({
+
+        numeroCommande,
+
+        utilisateurId,
+
+        emailUtilisateur,
 
 
-            catch(error){
+        articles,
+
+
+        montantTotal,
+
+        montantReduction,
+
+        montantLivraison,
+
+        montantAPayer,
 
 
 
-                console.log(
-                    "========== ERREUR PAWAPAY =========="
-                );
+        // FORCE USD
+        devise:"USD",
 
 
 
-                console.log(
-
-                    error.response?.data ||
-                    error.message
-
-                );
+        codePromo,
 
 
+
+        modePaiement,
+
+        operateurPaiement,
+
+
+
+        telephonePaiement,
+
+
+
+        adresseLivraison,
+
+
+
+        statutPaiement:"EN_ATTENTE",
+
+        statutCommande:"EN_ATTENTE"
+
+
+    });
+
+
+
+
+
+
+
+    // ==============================
+    // PAWAPAY
+    // ==============================
+
+    if(modePaiement === "MOBILE_MONEY"){
+
+
+        try{
+
+
+            const paiement =
+            await envoyerPaiementPawaPay(commande);
+
+
+
+
+            // Paiement refusé directement
+
+            if(paiement.status === "REJECTED"){
 
 
                 await Commande.findByIdAndDelete(
@@ -739,86 +721,146 @@ exports.creerCommande = async (req, res) => {
                 );
 
 
-
-
                 return res.status(400).json({
 
                     message:
-                    error.response?.data?.failureReason?.failureMessage ||
-                    error.message ||
-                    "Paiement impossible"
+                    paiement.failureReason?.failureMessage ||
+                    "Paiement refusé"
 
                 });
 
-
             }
 
+
+
+
+
+            commande.depositId =
+            paiement.depositId;
+
+
+
+            commande.statutPaiement =
+            "EN_COURS";
+
+
+
+
+
+            commande.metadata = {
+
+
+                ...commande.metadata,
+
+
+                pawapayStatus:
+                paiement.status || "ACCEPTED"
+
+
+            };
+
+
+
+
+            await commande.save();
+
+
+
+        }
+        catch(error){
+
+
+            console.log(
+                "========== ERREUR PAWAPAY =========="
+            );
+
+
+            console.log(
+
+                error.response?.data ||
+                error.message
+
+            );
+
+
+
+            await Commande.findByIdAndDelete(
+                commande._id
+            );
+
+
+
+            return res.status(400).json({
+
+                message:
+                error.response?.data?.failureReason?.failureMessage ||
+                error.message ||
+                "Paiement impossible"
+
+            });
 
 
         }
 
 
 
-
-
-
-        // ==============================
-        // MAIL UNIQUEMENT SI TOUT OK
-        // ==============================
-
-        await envoyerMailCommande(commande);
-
-
-
-
-
-
-
-        // ==============================
-        // REPONSE
-        // ==============================
-
-        return res.status(201).json({
-
-            message:"Commande créée",
-
-            commande
-
-        });
-
-
-
     }
 
 
-    catch(error){
 
 
 
-        console.log(
-
-            "ERREUR CREATION COMMANDE :",
-
-            error.message
-
-        );
 
 
+    // ==============================
+    // EMAIL
+    // ==============================
 
-        return res.status(500).json({
-
-            message:"Erreur serveur",
-
-            error:error.message
-
-        });
+    await envoyerMailCommande(commande);
 
 
 
-    }
+
+
+
+
+    return res.status(201).json({
+
+        message:"Commande créée",
+
+        commande
+
+    });
+
+
+
+}
+catch(error){
+
+
+    console.log(
+
+        "ERREUR CREATION COMMANDE :",
+
+        error.message
+
+    );
+
+
+
+    return res.status(500).json({
+
+        message:"Erreur serveur",
+
+        error:error.message
+
+    });
+
+
+
+}
 
 };
-
 // ADMIN : RÉCUPÉRER TOUTES LES COMMANDES
 // =======================================
 
