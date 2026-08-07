@@ -480,7 +480,6 @@ exports.creerCommande = async (req, res) => {
 
     try {
 
-
         const {
 
             utilisateurId,
@@ -529,7 +528,6 @@ exports.creerCommande = async (req, res) => {
 
 
 
-
         // ==============================
         // VERIFICATION DOUBLON
         // ==============================
@@ -558,7 +556,6 @@ exports.creerCommande = async (req, res) => {
 
         if(commandeExistante){
 
-
             return res.status(200).json({
 
                 message:
@@ -567,7 +564,6 @@ exports.creerCommande = async (req, res) => {
                 commande:commandeExistante
 
             });
-
 
         }
 
@@ -579,7 +575,6 @@ exports.creerCommande = async (req, res) => {
         // CREATION NUMERO COMMANDE
         // ==============================
 
-
         const numeroCommande =
         "KINOVA-" + Date.now();
 
@@ -587,26 +582,19 @@ exports.creerCommande = async (req, res) => {
 
 
 
-
         // ==============================
-        // CREATION COMMANDE MONGODB
+        // CREATION COMMANDE
         // ==============================
-
 
         const commande = await Commande.create({
 
-
             numeroCommande,
-
 
             utilisateurId,
 
-
             emailUtilisateur,
 
-
             articles,
-
 
 
             montantTotal,
@@ -618,11 +606,9 @@ exports.creerCommande = async (req, res) => {
             montantAPayer,
 
 
-
             devise,
 
             codePromo,
-
 
 
             modePaiement,
@@ -630,17 +616,13 @@ exports.creerCommande = async (req, res) => {
             operateurPaiement,
 
 
-
             telephonePaiement,
-
 
 
             adresseLivraison,
 
 
-
             statutPaiement:"EN_ATTENTE",
-
 
             statutCommande:"EN_ATTENTE"
 
@@ -651,11 +633,8 @@ exports.creerCommande = async (req, res) => {
 
 
 
-
-
-
         // ==============================
-        // APPEL PAWAPAY
+        // PAWAPAY
         // ==============================
 
 
@@ -670,6 +649,27 @@ exports.creerCommande = async (req, res) => {
 
 
 
+                // Sécurité si PawaPay retourne REJECTED
+                if(paiement.status === "REJECTED"){
+
+
+                    await Commande.findByIdAndDelete(
+                        commande._id
+                    );
+
+
+                    return res.status(400).json({
+
+                        message:
+                        paiement.failureReason?.failureMessage ||
+                        "Paiement refusé"
+
+                    });
+
+
+                }
+
+
 
 
                 commande.depositId =
@@ -679,7 +679,6 @@ exports.creerCommande = async (req, res) => {
 
                 commande.statutPaiement =
                 "EN_COURS";
-
 
 
 
@@ -698,13 +697,13 @@ exports.creerCommande = async (req, res) => {
 
 
 
-
                 await commande.save();
 
 
 
-
             }
+
+
             catch(error){
 
 
@@ -723,29 +722,23 @@ exports.creerCommande = async (req, res) => {
 
 
 
-                commande.statutPaiement =
-                "ECHEC";
+                // Suppression de la commande échouée
+
+                await Commande.findByIdAndDelete(
+                    commande._id
+                );
 
 
 
+                return res.status(400).json({
 
-                commande.metadata = {
+                    message:
+                    error.response?.data?.failureReason?.failureMessage ||
+                    error.message ||
+                    "Paiement impossible"
 
+                });
 
-                    ...commande.metadata,
-
-
-                    pawapayError:
-                    error.response?.data ||
-                    error.message
-
-
-                };
-
-
-
-
-                await commande.save();
 
 
             }
@@ -758,14 +751,12 @@ exports.creerCommande = async (req, res) => {
 
 
 
-
         // ==============================
-        // ENVOI MAIL CLIENT
+        // MAIL UNIQUEMENT SI TOUT OK
         // ==============================
 
 
         await envoyerMailCommande(commande);
-
 
 
 
@@ -787,15 +778,18 @@ exports.creerCommande = async (req, res) => {
 
 
 
-
     }
+
+
     catch(error){
 
 
-
         console.log(
+
             "ERREUR CREATION COMMANDE :",
+
             error.message
+
         );
 
 
