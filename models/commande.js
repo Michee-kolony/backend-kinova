@@ -146,16 +146,11 @@ const commandeSchema = new mongoose.Schema(
 
     },
 
-    devise:{
-
-        type:String,
-
-        enum:["CDF"],
-
-        default:"CDF"
-
-    },
-
+  devise:{
+    type:String,
+    enum:["USD"],
+    default:"USD"
+},
     codePromo:{
 
         type:String,

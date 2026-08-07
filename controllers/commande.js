@@ -476,6 +476,10 @@ Equipe Kinova
 // CREER UNE COMMANDE + PAWAPAY
 // =======================================
 
+// =======================================
+// CREER UNE COMMANDE + PAWAPAY
+// =======================================
+
 exports.creerCommande = async (req, res) => {
 
     try {
@@ -492,7 +496,6 @@ exports.creerCommande = async (req, res) => {
             montantLivraison,
             montantAPayer,
 
-            devise,
             codePromo,
 
             modePaiement,
@@ -524,7 +527,6 @@ exports.creerCommande = async (req, res) => {
             });
 
         }
-
 
 
 
@@ -584,6 +586,7 @@ exports.creerCommande = async (req, res) => {
 
         // ==============================
         // CREATION COMMANDE
+        // DEVise FORCEE USD
         // ==============================
 
         const commande = await Commande.create({
@@ -606,7 +609,9 @@ exports.creerCommande = async (req, res) => {
             montantAPayer,
 
 
-            devise,
+            // Toujours en USD
+            devise:"USD",
+
 
             codePromo,
 
@@ -633,10 +638,10 @@ exports.creerCommande = async (req, res) => {
 
 
 
+
         // ==============================
         // PAWAPAY
         // ==============================
-
 
         if(modePaiement === "MOBILE_MONEY"){
 
@@ -649,7 +654,9 @@ exports.creerCommande = async (req, res) => {
 
 
 
-                // Sécurité si PawaPay retourne REJECTED
+
+                // Sécurité si PawaPay refuse directement
+
                 if(paiement.status === "REJECTED"){
 
 
@@ -672,6 +679,7 @@ exports.creerCommande = async (req, res) => {
 
 
 
+
                 commande.depositId =
                 paiement.depositId;
 
@@ -679,6 +687,7 @@ exports.creerCommande = async (req, res) => {
 
                 commande.statutPaiement =
                 "EN_COURS";
+
 
 
 
@@ -694,6 +703,7 @@ exports.creerCommande = async (req, res) => {
 
 
                 };
+
 
 
 
@@ -713,6 +723,7 @@ exports.creerCommande = async (req, res) => {
                 );
 
 
+
                 console.log(
 
                     error.response?.data ||
@@ -722,11 +733,11 @@ exports.creerCommande = async (req, res) => {
 
 
 
-                // Suppression de la commande échouée
 
                 await Commande.findByIdAndDelete(
                     commande._id
                 );
+
 
 
 
@@ -740,7 +751,6 @@ exports.creerCommande = async (req, res) => {
                 });
 
 
-
             }
 
 
@@ -751,12 +761,13 @@ exports.creerCommande = async (req, res) => {
 
 
 
+
         // ==============================
         // MAIL UNIQUEMENT SI TOUT OK
         // ==============================
 
-
         await envoyerMailCommande(commande);
+
 
 
 
@@ -766,7 +777,6 @@ exports.creerCommande = async (req, res) => {
         // ==============================
         // REPONSE
         // ==============================
-
 
         return res.status(201).json({
 
@@ -782,6 +792,7 @@ exports.creerCommande = async (req, res) => {
 
 
     catch(error){
+
 
 
         console.log(
@@ -805,7 +816,6 @@ exports.creerCommande = async (req, res) => {
 
 
     }
-
 
 };
 
