@@ -863,7 +863,6 @@ catch(error){
 };
 // ADMIN : RÉCUPÉRER TOUTES LES COMMANDES
 // =======================================
-
 exports.getallCommandes = async (req,res)=>{
 
     try{

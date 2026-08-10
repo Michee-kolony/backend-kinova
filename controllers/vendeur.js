@@ -375,6 +375,14 @@ exports.modifierVendeur = async (req, res) => {
     }
 };
 
+
+exports.getOneVendeur = (req, res)=>{
+
+    Vendeur.findOne({_id:req.params.id})
+           .then(data=>res.status(200).json(data))
+           .catch(error=>res.status(500).json(error))
+}
+
 // ==========================================
 // CONNEXION VENDEUR
 // ==========================================

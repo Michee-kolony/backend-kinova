@@ -7,7 +7,7 @@ const r2 = new S3Client({
         accessKeyId: 'd75444cfcfc5342084c5d49ef21dcffd',
         secretAccessKey: 'da394ec2f4d40437e46e81e71da9fd0f82d1fe2b6fe0d0848349c9dba26cc4ba'
     },
-    forcePathStyle: true // ✅ Important pour R2
+    forcePathStyle: true // Important pour R2
 });
 
 module.exports = r2;
