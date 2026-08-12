@@ -13,8 +13,7 @@ const envoyerPayoutPawaPay = async ({
 
 }) => {
 
-    const payoutId =
-        randomUUID();
+    const payoutId = randomUUID();
 
 
     const telephoneNormalise =

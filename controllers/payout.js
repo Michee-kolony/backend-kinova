@@ -6,45 +6,46 @@ const envoyerPayoutPawaPay =
     require("../services/pawapayPayout");
 
 
-// ======================================================
-// EFFECTUER UN PAYOUT MANUEL AU VENDEUR
-// ======================================================
+// =====================================================
+// EFFECTUER PAYOUT MANUEL VENDEUR
+// =====================================================
 
 exports.effectuerPayoutVendeur = async (req, res) => {
 
     try {
 
         const {
-            commandeId,
             vendeurId,
+            numeroCommande,
             telephone,
             operateur
         } = req.body;
 
 
-        // ==================================================
+        // =================================================
         // VALIDATION
-        // ==================================================
+        // =================================================
 
-        if (!commandeId || !vendeurId) {
+        if (!vendeurId) {
 
             return res.status(400).json({
-                message:
-                    "commandeId et vendeurId sont obligatoires"
+                message: "vendeurId est obligatoire"
             });
 
         }
 
+        if (!numeroCommande) {
 
-        // ==================================================
-        // TELEPHONE ET OPERATEUR SAISIS PAR ADMIN
-        // ==================================================
+            return res.status(400).json({
+                message: "numeroCommande est obligatoire"
+            });
+
+        }
 
         if (!telephone) {
 
             return res.status(400).json({
-                message:
-                    "Le numéro de téléphone est obligatoire"
+                message: "telephone est obligatoire"
             });
 
         }
@@ -52,82 +53,78 @@ exports.effectuerPayoutVendeur = async (req, res) => {
         if (!operateur) {
 
             return res.status(400).json({
-                message:
-                    "L'opérateur est obligatoire"
+                message: "operateur est obligatoire"
             });
 
         }
 
 
-        // ==================================================
-        // NORMALISATION TELEPHONE
-        // ==================================================
+        // =================================================
+        // RECHERCHER VENDEUR
+        // =================================================
 
-        const telephoneNormalise =
-            String(telephone)
-                .replace(/\+/g, "")
-                .replace(/\s/g, "")
-                .replace(/-/g, "");
+        const vendeur =
+            await Vendeur.findById(vendeurId);
+
+        if (!vendeur) {
+
+            return res.status(404).json({
+                message: "Vendeur introuvable"
+            });
+
+        }
 
 
-        // ==================================================
-        // RECHERCHE COMMANDE
-        // ==================================================
+        // =================================================
+        // RECHERCHER COMMANDE
+        // GRÂCE AU NUMERO DE COMMANDE
+        // =================================================
 
         const commande =
-            await Commande.findById(commandeId);
-
+            await Commande.findOne({
+                numeroCommande
+            });
 
         if (!commande) {
 
             return res.status(404).json({
+
                 message:
-                    "Commande introuvable"
+                    "Commande introuvable avec ce numéro",
+
+                numeroCommande
+
             });
 
         }
 
 
-        // ==================================================
-        // VERIFIER PAIEMENT CLIENT
-        // ==================================================
+        // =================================================
+        // VÉRIFIER PAIEMENT CLIENT
+        // =================================================
 
         if (
             commande.statutPaiement !== "PAYE"
         ) {
 
             return res.status(400).json({
+
                 message:
-                    "Cette commande n'est pas encore payée"
+                    "Cette commande n'est pas encore payée",
+
+                statutPaiement:
+                    commande.statutPaiement
+
             });
 
         }
 
 
-        // ==================================================
-        // VERIFIER VENDEUR
-        // ==================================================
-
-        const vendeur =
-            await Vendeur.findById(vendeurId);
-
-
-        if (!vendeur) {
-
-            return res.status(404).json({
-                message:
-                    "Vendeur introuvable"
-            });
-
-        }
-
-
-        // ==================================================
+        // =================================================
         // RECHERCHER LES ARTICLES DU VENDEUR
-        // DANS CETTE COMMANDE
-        // ==================================================
+        // =================================================
 
-        const articles =
+        const articlesVendeur =
             commande.articles.filter(
 
                 article =>
@@ -138,48 +135,115 @@ exports.effectuerPayoutVendeur = async (req, res) => {
             );
 
 
-        if (!articles.length) {
+        if (!articlesVendeur.length) {
 
             return res.status(404).json({
+
                 message:
-                    "Aucun article de ce vendeur dans cette commande"
+                    "Aucun article de ce vendeur dans cette commande",
+
+                vendeurId,
+                numeroCommande
+
             });
 
         }
 
 
-        // ==================================================
-        // VERIFIER LIVRAISON
-        // ==================================================
+        // =================================================
+        // VÉRIFIER QUE TOUS LES ARTICLES SONT LIVRÉS
+        // =================================================
 
-        const tousLivres =
-            articles.every(
+        const articlesNonLivres =
+            articlesVendeur.filter(
 
                 article =>
-                    article.statutLivraison === "LIVRE"
+                    article.statutLivraison !==
+                    "LIVRE"
 
             );
 
 
-        if (!tousLivres) {
+        if (articlesNonLivres.length > 0) {
 
             return res.status(400).json({
+
                 message:
-                    "Tous les articles du vendeur doivent être livrés avant le payout"
+                    "Tous les articles du vendeur doivent être livrés avant le payout",
+
+                articlesNonLivres:
+                    articlesNonLivres.map(article => ({
+
+                        articleId:
+                            article.articleId,
+
+                        nom:
+                            article.nom,
+
+                        statutLivraison:
+                            article.statutLivraison
+
+                    }))
+
             });
 
         }
 
 
-        // ==================================================
-        // VERIFIER SI UN PAYOUT EXISTE DEJA
-        // ==================================================
+        // =================================================
+        // CALCUL DU MONTANT
+        // =================================================
+
+        const montant =
+            articlesVendeur.reduce(
+
+                (total, article) => {
+
+                    const prix =
+                        Number(
+                            article.prixFinal
+                        ) || 0;
+
+                    const quantite =
+                        Number(
+                            article.quantite
+                        ) || 0;
+
+                    return total +
+                        (prix * quantite);
+
+                },
+
+                0
+
+            );
+
+
+        if (montant <= 0) {
+
+            return res.status(400).json({
+
+                message:
+                    "Le montant du payout est invalide",
+
+                montant
+
+            });
+
+        }
+
+
+        // =================================================
+        // VÉRIFIER SI LE VENDEUR A DÉJÀ ÉTÉ PAYÉ
+        // =================================================
 
         const payoutExistant =
             await VendeurPaye.findOne({
 
-                commandeId,
                 vendeurId,
+
+                commandeId:
+                    commande._id,
 
                 statut: {
                     $in: [
@@ -194,10 +258,10 @@ exports.effectuerPayoutVendeur = async (req, res) => {
 
         if (payoutExistant) {
 
-            return res.status(409).json({
+            return res.status(400).json({
 
                 message:
-                    "Un payout existe déjà pour ce vendeur dans cette commande",
+                    "Ce vendeur a déjà reçu ou possède un payout pour cette commande",
 
                 payout:
                     payoutExistant
@@ -207,116 +271,71 @@ exports.effectuerPayoutVendeur = async (req, res) => {
         }
 
 
-        // ==================================================
-        // PREPARER LES ARTICLES POUR L'HISTORIQUE
-        // ==================================================
+        // =================================================
+        // PRÉPARER LES ARTICLES POUR L'HISTORIQUE
+        // =================================================
 
-        const articlesPayout =
-            articles.map(article => {
+        const articlesHistorique =
+            articlesVendeur.map(article => ({
 
-                const prixUnitaire =
-                    Number(article.prixFinal || 0);
+                articleId:
+                    article.articleId,
 
-                const quantite =
-                    Number(article.quantite || 1);
+                nomArticle:
+                    article.nom,
 
-                const montant =
-                    prixUnitaire * quantite;
+                quantite:
+                    article.quantite,
 
+                prixUnitaire:
+                    article.prixFinal,
 
-                return {
+                montant:
+                    Number(article.prixFinal) *
+                    Number(article.quantite)
 
-                    articleId:
-                        article.articleId,
-
-                    nomArticle:
-                        article.nom,
-
-                    quantite,
-
-                    prixUnitaire,
-
-                    montant
-
-                };
-
-            });
+            }));
 
 
-        // ==================================================
-        // CALCUL MONTANT TOTAL VENDEUR
-        // ==================================================
-
-        const montant =
-            articlesPayout.reduce(
-
-                (total, article) =>
-
-                    total + article.montant,
-
-                0
-
-            );
-
-
-        if (montant <= 0) {
-
-            return res.status(400).json({
-                message:
-                    "Montant payout invalide"
-            });
-
-        }
-
-
-        // ==================================================
-        // DEVISE
-        // ==================================================
-
-        const devise =
-            commande.devise || "USD";
-
-
-        // ==================================================
+        // =================================================
         // ENVOYER LE PAYOUT À PAWAPAY
-        // ==================================================
+        // =================================================
 
         const paiement =
             await envoyerPayoutPawaPay({
 
-                telephone:
-                    telephoneNormalise,
+                telephone,
 
                 operateur,
 
                 montant,
 
-                devise,
+                devise:
+                    commande.devise,
 
-                numeroCommande:
-                    commande.numeroCommande,
+                numeroCommande,
 
                 vendeurId
 
             });
 
 
-        // ==================================================
-        // CREER HISTORIQUE VENDEURPAYE
-        // ==================================================
+        // =================================================
+        // CRÉER L'HISTORIQUE VENDEURPAYE
+        // =================================================
 
         const payout =
             await VendeurPaye.create({
 
                 vendeurId,
 
-                commandeId,
+                commandeId:
+                    commande._id,
 
-                numeroCommande:
-                    commande.numeroCommande,
+                numeroCommande,
 
                 articles:
-                    articlesPayout,
+                    articlesHistorique,
 
                 payoutId:
                     paiement.payoutId,
@@ -327,42 +346,38 @@ exports.effectuerPayoutVendeur = async (req, res) => {
 
                 montant,
 
-                devise,
+                devise:
+                    commande.devise,
 
-                telephone:
-                    telephoneNormalise,
+                telephone,
 
                 operateur,
 
                 statut:
                     paiement.status ||
-                    "EN_ATTENTE",
+                    "ACCEPTED",
+
+                effectuePar:
+                    req.user?._id ||
+                    req.user?.id ||
+                    null,
+
+                datePaiement:
+                    new Date(),
 
                 pawapayStatus:
                     paiement.status ||
                     null,
 
-                // IMPORTANT :
-                // le vendeur n'est PAS encore considéré
-                // comme payé tant que PawaPay n'a pas
-                // envoyé COMPLETED
-
-                datePaiement:
-                    paiement.status === "COMPLETED"
-                        ? new Date()
-                        : null,
-
-                effectuePar:
-                    req.user?._id ||
-                    req.user?.id ||
+                failureReason:
                     null
 
             });
 
 
-        // ==================================================
-        // REPONSE
-        // ==================================================
+        // =================================================
+        // RÉPONSE
+        // =================================================
 
         return res.status(201).json({
 
@@ -374,6 +389,8 @@ exports.effectuerPayoutVendeur = async (req, res) => {
         });
 
     }
+
+
     catch (error) {
 
         console.error(
@@ -410,9 +427,9 @@ exports.effectuerPayoutVendeur = async (req, res) => {
 };
 
 
-// ======================================================
-// RECUPERER TOUS LES PAYOUTS
-// ======================================================
+// =====================================================
+// RÉCUPÉRER TOUS LES PAYOUTS
+// =====================================================
 
 exports.getTousLesPayouts = async (req, res) => {
 
@@ -444,73 +461,11 @@ exports.getTousLesPayouts = async (req, res) => {
         });
 
     }
+
     catch (error) {
 
         console.error(
             "ERREUR RECUPERATION PAYOUTS :",
-            error.message
-        );
-
-        return res.status(500).json({
-
-            message:
-                "Erreur serveur",
-
-            error:
-                error.message
-
-        });
-
-    }
-
-};
-
-
-// ======================================================
-// RECUPERER UN PAYOUT
-// ======================================================
-
-exports.getPayoutById = async (req, res) => {
-
-    try {
-
-        const payout =
-            await VendeurPaye.findById(
-                req.params.id
-            )
-            .populate(
-                "vendeurId",
-                "nom prenom email"
-            )
-            .populate(
-                "commandeId",
-                "numeroCommande"
-            );
-
-
-        if (!payout) {
-
-            return res.status(404).json({
-
-                message:
-                    "Payout introuvable"
-
-            });
-
-        }
-
-
-        return res.status(200).json({
-
-            payout
-
-        });
-
-    }
-    catch (error) {
-
-        console.error(
-            "ERREUR RECUPERATION PAYOUT :",
             error.message
         );
 
