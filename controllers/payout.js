@@ -438,14 +438,16 @@ exports.getTousLesPayouts = async (req, res) => {
         const payouts =
             await VendeurPaye
                 .find()
-                .populate(
-                    "vendeurId",
-                    "nom prenom email"
-                )
-                .populate(
-                    "commandeId",
-                    "numeroCommande"
-                )
+                .populate({
+                    path: "vendeurId",
+                    select:
+                        "storeName phoneNumber email storeCategory"
+                })
+                .populate({
+                    path: "commandeId",
+                    select:
+                        "numeroCommande"
+                })
                 .sort({
                     createdAt: -1
                 });
