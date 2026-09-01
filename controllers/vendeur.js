@@ -1,6 +1,7 @@
 const bcrypt = require("bcrypt");
 const Vendeur = require("../models/vendeur");
 const jwt = require('jsonwebtoken');
+const transporter = require("../config/mail");
 
 // ==========================================
 // INSCRIPTION VENDEUR (SANS PHOTO)
@@ -129,6 +130,45 @@ exports.inscrireVendeur = async (req, res) => {
         // ==========================================
 
         await vendeur.save();
+
+        // ==========================================
+        // 9bis. ENVOI EMAIL DE BIENVENUE
+        // ==========================================
+
+        try {
+            await transporter.sendMail({
+                from: '"Kinova" <kinova@ayemtech.com>',
+                to: vendeur.email,
+                subject: "🎉 Bienvenue sur Kinova !",
+                html: `
+                <div style="font-family:Arial, sans-serif; max-width:600px; margin:0 auto;">
+
+                <h2>🎉 Bienvenue sur Kinova !</h2>
+
+                <p>Nous sommes heureux de vous accueillir en tant que <strong>vendeur sur Kinova</strong>.</p>
+
+                <p>Avant de finaliser votre inscription, veuillez prendre connaissance des informations importantes concernant votre compte vendeur :</p>
+
+                <p><strong>💰 Commission de 10 %</strong><br>
+                Pour chaque produit vendu sur Kinova, une <strong>commission de 10 %</strong> est prélevée sur le montant de la vente.</p>
+
+                <p><strong>🔐 Vérification du compte</strong><br>
+                Après la création de votre compte, celui-ci sera soumis à une <strong>vérification par l'équipe Kinova</strong>.</p>
+
+                <p><strong>📊 Accès à votre Dashboard</strong><br>
+                Votre <strong>Dashboard vendeur sera accessible uniquement après la vérification et la validation de votre compte</strong>. Vous pourrez ensuite gérer vos produits, suivre vos ventes et consulter vos informations.</p>
+
+                <p><strong>⚠️ Règles à respecter</strong><br>
+                Toute mise en vente de <strong>produits illégaux ou interdits</strong> entraînera la <strong>suppression immédiate du produit</strong> et le <strong>bannissement définitif du compte</strong> vendeur, sans préavis.</p>
+
+                <p>Merci de votre confiance et <strong>bienvenue dans la communauté des vendeurs Kinova !</strong> 🚀</p>
+
+                </div>
+                `
+            });
+        } catch (mailError) {
+            console.error("⚠️ Erreur envoi email de bienvenue vendeur :", mailError);
+        }
 
         // ==========================================
         // 10. RÉPONSE SUCCÈS

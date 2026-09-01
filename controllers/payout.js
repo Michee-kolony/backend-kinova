@@ -9,7 +9,6 @@ const envoyerPayoutPawaPay =
 // =====================================================
 // EFFECTUER PAYOUT MANUEL VENDEUR
 // =====================================================
-
 exports.effectuerPayoutVendeur = async (req, res) => {
 
     try {
@@ -425,7 +424,6 @@ exports.effectuerPayoutVendeur = async (req, res) => {
     }
 
 };
-
 
 // =====================================================
 // RÉCUPÉRER TOUS LES PAYOUTS

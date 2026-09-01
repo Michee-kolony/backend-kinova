@@ -15,4 +15,4 @@ router.post('/forgot-password', clientCtrl.sendResetCode);
 router.post('/verify-code', clientCtrl.verifyResetCode);
 router.post('/reset-password', clientCtrl.resetPassword);
 
-module.exports = router;
+module.exports = router;""
