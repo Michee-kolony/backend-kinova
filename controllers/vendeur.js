@@ -166,6 +166,7 @@ exports.inscrireVendeur = async (req, res) => {
                 </div>
                 `
             });
+            console.log("✅ Email de bienvenue envoyé à", vendeur.email);
         } catch (mailError) {
             console.error("⚠️ Erreur envoi email de bienvenue vendeur :", mailError);
         }
