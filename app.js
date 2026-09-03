@@ -18,6 +18,8 @@ const messageRoute = require('./routes/messages');
 const routeCommande = require('./routes/commande');
 const pawapayRoute = require("./routes/pawapay");
 const payoutRoutes = require("./routes/payout");
+const livreurRoute = require('./routes/livreur');
+const livraisonRoute = require('./routes/livraison');
 
 mongoose.connect(
   'mongodb://micheekolony71%40gmail.com:1708roosevelt@187.55.225.170:27017/kinova?authSource=admin',
@@ -69,7 +71,18 @@ app.use('/messages', messageRoute);
 app.use('/commandes', routeCommande);
 app.use("/pawapay", pawapayRoute);
 app.use("/payout", payoutRoutes);
+app.use('/livreur', livreurRoute);
+app.use('/livraison', livraisonRoute);
 
-
+// Gestionnaire d'erreurs global : évite de renvoyer une page HTML brute
+// (ex: timeout réseau vers R2) et renvoie du JSON exploitable par le client
+app.use((err, req, res, next) => {
+  console.error("❌ Erreur non gérée :", err);
+  res.status(500).json({
+    success: false,
+    message: "Une erreur interne est survenue",
+    error: err.message
+  });
+});
 
 module.exports = app;
