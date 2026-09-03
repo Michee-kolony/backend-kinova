@@ -1283,12 +1283,16 @@ exports.updateStatutCommande = async(req,res)=>{
 
             statutCommande,
 
-            statutPaiement
+            statutPaiement,
+
+            statutLivraison
 
 
         } = req.body;
 
-
+        // Le livreur, le vendeur et l'administrateur peuvent tous modifier
+        // le statut d'une commande (ex: le livreur passe statutLivraison
+        // à EN_COURS_LIVRAISON puis LIVRE)
 
 
 
@@ -1304,7 +1308,9 @@ exports.updateStatutCommande = async(req,res)=>{
 
                 statutCommande,
 
-                statutPaiement
+                statutPaiement,
+
+                statutLivraison
 
 
             },
@@ -1313,7 +1319,9 @@ exports.updateStatutCommande = async(req,res)=>{
             {
 
 
-                new:true
+                new:true,
+
+                runValidators:true
 
 
             }
