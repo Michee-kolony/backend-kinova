@@ -964,6 +964,55 @@ exports.updateStatutArticleCommande = async (req, res) => {
 };
 
 // =======================================
+// AFFECTER UN LIVREUR À UNE COMMANDE
+// =======================================
+exports.affecterLivreurCommande = async (req, res) => {
+
+    try {
+
+        const { id } = req.params;
+        const { idLivreur } = req.body;
+
+        if (!idLivreur) {
+            return res.status(400).json({
+                message: "idLivreur est requis"
+            });
+        }
+
+        const commande = await Commande.findByIdAndUpdate(
+            id,
+            {
+                idLivreur,
+                statutLivraison: "EN_COURS_LIVRAISON"
+            },
+            {
+                new: true,
+                runValidators: true
+            }
+        );
+
+        if (!commande) {
+            return res.status(404).json({
+                message: "Commande introuvable"
+            });
+        }
+
+        res.status(200).json({
+            message: "Livreur affecté avec succès",
+            commande
+        });
+
+    } catch(error) {
+        console.error('❌ Erreur affectation livreur:', error);
+        res.status(500).json({
+            message: "Erreur serveur",
+            error: error.message
+        });
+    }
+
+};
+
+// =======================================
 // RÉCUPÉRER UNE COMMANDE PAR ID
 // =======================================
 

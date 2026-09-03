@@ -10,7 +10,8 @@ const {
     verifierPaiement,
     getallCommandes,
     getoneCommande,
-    updateStatutArticleCommande
+    updateStatutArticleCommande,
+    affecterLivreurCommande
 } = require("../controllers/commande");
 
 
@@ -23,6 +24,9 @@ router.get("/admin/", getallCommandes);
 
 //RECUPERE UNE COMMANDE PAR ID
 router.get("/admin/:id", getoneCommande);
+
+//AFFECTER UN LIVREUR À UNE COMMANDE (avant /admin/:id)
+router.put("/admin/:id/livreur", affecterLivreurCommande);
 
 //MODIFIER LE STATUT D'UNE COMMANDE
 router.put("/admin/:id", updateStatutArticleCommande);
