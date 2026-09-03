@@ -914,15 +914,6 @@ exports.updateStatutArticleCommande = async (req, res) => {
             });
         }
 
-        //Récupérer le vendeurId depuis le body (envoyé par le frontend)
-        const vendeurId = req.body.vendeurId || req.user?.vendeurId || req.user?._id || req.user?.id;
-
-        if (!vendeurId) {
-            return res.status(400).json({
-                message: "Vendeur non identifié"
-            });
-        }
-
         // Vérifier si la commande existe
         const commande = await Commande.findById(id);
 
@@ -932,17 +923,16 @@ exports.updateStatutArticleCommande = async (req, res) => {
             });
         }
 
-        // Trouver l'article correspondant au vendeur
+        // Le vendeur et l'administrateur peuvent modifier n'importe quel
+        // article, pas seulement ceux auxquels ils sont associés
         const article = commande.articles.find(
-            item =>
-                item.articleId.toString() === articleId &&
-                item.vendeurId.toString() === vendeurId.toString()
+            item => item.articleId.toString() === articleId
         );
 
 
         if (!article) {
-            return res.status(403).json({
-                message: "Vous n'avez pas accès à cet article"
+            return res.status(404).json({
+                message: "Article introuvable dans cette commande"
             });
         }
 
