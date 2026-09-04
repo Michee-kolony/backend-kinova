@@ -11,8 +11,13 @@ const {
     getallCommandes,
     getoneCommande,
     updateStatutArticleCommande,
-    affecterLivreurCommande
+    affecterLivreurCommande,
+    updateStatutLivraisonCommande,
+    updateStatutCommandeAdmin
 } = require("../controllers/commande");
+
+const anyUser = require("../middlewares/anyuser");
+const isAdmin = require("../middlewares/isAdmin");
 
 
 // Créer une commande
@@ -20,16 +25,22 @@ router.post("/", creerCommande);
 
 //Recupère toutes les commandes
 // ADMIN : toutes les commandes
-router.get("/admin/", getallCommandes);
+router.get("/admin/", anyUser, isAdmin, getallCommandes);
 
 //RECUPERE UNE COMMANDE PAR ID
-router.get("/admin/:id", getoneCommande);
+router.get("/admin/:id", anyUser, isAdmin, getoneCommande);
 
 //AFFECTER UN LIVREUR À UNE COMMANDE (avant /admin/:id)
-router.put("/admin/:id/livreur", affecterLivreurCommande);
+router.put("/admin/:id/livreur", anyUser, isAdmin, affecterLivreurCommande);
 
-//MODIFIER LE STATUT D'UNE COMMANDE
-router.put("/admin/:id", updateStatutArticleCommande);
+//MODIFIER LE STATUT DE LIVRAISON DE LA COMMANDE (avant /admin/:id)
+router.put("/admin/:id/statut-livraison", anyUser, isAdmin, updateStatutLivraisonCommande);
+
+//MODIFIER LE STATUT GLOBAL DE LA COMMANDE (avant /admin/:id)
+router.put("/admin/:id/statut-commande", anyUser, isAdmin, updateStatutCommandeAdmin);
+
+//MODIFIER LE STATUT D'UN ARTICLE DE LA COMMANDE
+router.put("/admin/:id", anyUser, isAdmin, updateStatutArticleCommande);
 
 router.get('/verifier-paiement/:id', verifierPaiement);
 

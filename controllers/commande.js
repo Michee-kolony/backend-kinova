@@ -1013,6 +1013,116 @@ exports.affecterLivreurCommande = async (req, res) => {
 };
 
 // =======================================
+// MODIFIER LE STATUT DE LIVRAISON D'UNE COMMANDE
+// (statut global de la commande, pas d'un article)
+// =======================================
+exports.updateStatutLivraisonCommande = async (req, res) => {
+
+    try {
+
+        const { id } = req.params;
+        const { statutLivraison } = req.body;
+
+        const statutsAutorises = [
+            "EN_ATTENTE",
+            "EN_COURS_PREPARATION",
+            "EN_COURS_LIVRAISON",
+            "LIVRE"
+        ];
+
+        if (!statutsAutorises.includes(statutLivraison)) {
+            return res.status(400).json({
+                message: "Statut de livraison invalide"
+            });
+        }
+
+        const commande = await Commande.findByIdAndUpdate(
+            id,
+            { statutLivraison },
+            {
+                new: true,
+                runValidators: true
+            }
+        );
+
+        if (!commande) {
+            return res.status(404).json({
+                message: "Commande introuvable"
+            });
+        }
+
+        res.status(200).json({
+            message: "Statut de livraison modifié avec succès",
+            commande
+        });
+
+    } catch(error) {
+        console.error('❌ Erreur mise à jour statut livraison:', error);
+        res.status(500).json({
+            message: "Erreur serveur",
+            error: error.message
+        });
+    }
+
+};
+
+// =======================================
+// MODIFIER LE STATUT GLOBAL D'UNE COMMANDE
+// (EN_ATTENTE, CONFIRMEE, EN_PREPARATION, EXPEDIEE, LIVREE, ANNULEE)
+// =======================================
+exports.updateStatutCommandeAdmin = async (req, res) => {
+
+    try {
+
+        const { id } = req.params;
+        const { statutCommande } = req.body;
+
+        const statutsAutorises = [
+            "EN_ATTENTE",
+            "CONFIRMEE",
+            "EN_PREPARATION",
+            "EXPEDIEE",
+            "LIVREE",
+            "ANNULEE"
+        ];
+
+        if (!statutsAutorises.includes(statutCommande)) {
+            return res.status(400).json({
+                message: "Statut de commande invalide"
+            });
+        }
+
+        const commande = await Commande.findByIdAndUpdate(
+            id,
+            { statutCommande },
+            {
+                new: true,
+                runValidators: true
+            }
+        );
+
+        if (!commande) {
+            return res.status(404).json({
+                message: "Commande introuvable"
+            });
+        }
+
+        res.status(200).json({
+            message: "Statut de la commande modifié avec succès",
+            commande
+        });
+
+    } catch(error) {
+        console.error('❌ Erreur mise à jour statut commande:', error);
+        res.status(500).json({
+            message: "Erreur serveur",
+            error: error.message
+        });
+    }
+
+};
+
+// =======================================
 // RÉCUPÉRER UNE COMMANDE PAR ID
 // =======================================
 
