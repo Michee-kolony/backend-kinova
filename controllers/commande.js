@@ -897,6 +897,41 @@ exports.getallCommandes = async (req,res)=>{
 };
 
 
+// LIVREUR : commandes qui lui sont affectées (idLivreur = livreur connecté)
+exports.getCommandesLivreur = async (req, res) => {
+
+    try {
+
+        const commandes = await Commande.find({
+            idLivreur: req.livreur.id
+        })
+        .sort({
+            createdAt: -1
+        });
+
+        res.status(200).json({
+
+            total: commandes.length,
+
+            commandes
+
+        });
+
+    } catch (error) {
+
+        res.status(500).json({
+
+            message: "Erreur serveur",
+
+            error: error.message
+
+        });
+
+    }
+
+};
+
+
 exports.updateStatutArticleCommande = async (req, res) => {
 
     try {
