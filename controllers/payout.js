@@ -120,6 +120,35 @@ exports.effectuerPayoutVendeur = async (req, res) => {
 
 
         // =================================================
+        // VÉRIFIER QUE LA COMMANDE EST EN PRÉPARATION
+        // OU EN COURS DE LIVRAISON
+        // =================================================
+
+        const statutsLivraisonAutorises = [
+            "EN_COURS_PREPARATION",
+            "EN_COURS_LIVRAISON"
+        ];
+
+        if (
+            !statutsLivraisonAutorises.includes(
+                commande.statutLivraison
+            )
+        ) {
+
+            return res.status(400).json({
+
+                message:
+                    "La commande doit être en cours de préparation ou en cours de livraison pour effectuer le payout",
+
+                statutLivraison:
+                    commande.statutLivraison
+
+            });
+
+        }
+
+
+        // =================================================
         // RECHERCHER LES ARTICLES DU VENDEUR
         // =================================================
 
@@ -143,46 +172,6 @@ exports.effectuerPayoutVendeur = async (req, res) => {
 
                 vendeurId,
                 numeroCommande
-
-            });
-
-        }
-
-
-        // =================================================
-        // VÉRIFIER QUE TOUS LES ARTICLES SONT LIVRÉS
-        // =================================================
-
-        const articlesNonLivres =
-            articlesVendeur.filter(
-
-                article =>
-                    article.statutLivraison !==
-                    "LIVRE"
-
-            );
-
-
-        if (articlesNonLivres.length > 0) {
-
-            return res.status(400).json({
-
-                message:
-                    "Tous les articles du vendeur doivent être livrés avant le payout",
-
-                articlesNonLivres:
-                    articlesNonLivres.map(article => ({
-
-                        articleId:
-                            article.articleId,
-
-                        nom:
-                            article.nom,
-
-                        statutLivraison:
-                            article.statutLivraison
-
-                    }))
 
             });
 
