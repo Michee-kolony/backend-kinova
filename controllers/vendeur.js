@@ -563,3 +563,135 @@ exports.supprimerVendeur = (req, res) => {
             });
         });
 };
+// ==========================================
+// MOT DE PASSE OUBLIÉ VENDEUR
+// ==========================================
+
+exports.sendResetCode = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                message: "L'adresse e-mail est obligatoire"
+            });
+        }
+
+        const vendeur = await Vendeur.findOne({ email: email.toLowerCase().trim() });
+
+        if (!vendeur) {
+            return res.status(404).json({
+                message: "Aucun compte trouvé."
+            });
+        }
+
+        const code = Math.floor(1000 + Math.random() * 9000).toString();
+
+        vendeur.resetPasswordCode = code;
+        vendeur.resetPasswordExpires = Date.now() + 10 * 60 * 1000;
+
+        await vendeur.save();
+
+        await transporter.sendMail({
+            from: '"Kinova" <kinova@ayemtech.com>',
+            to: vendeur.email,
+            subject: "Réinitialisation du mot de passe",
+            html: `
+            <div style="font-family:Arial">
+            <h2>Kinova</h2>
+            <p>Votre code est :</p>
+            <h1 style="font-size:45px">${code}</h1>
+            <p>Ce code expire dans 10 minutes.</p>
+            </div>
+            `
+        });
+
+        res.json({
+            message: "Code envoyé."
+        });
+    } catch (error) {
+        res.status(500).json({
+            error: error.message
+        });
+    }
+};
+
+exports.verifyResetCode = async (req, res) => {
+    try {
+        const { email, code } = req.body;
+
+        const vendeur = await Vendeur.findOne({ email: (email || "").toLowerCase().trim() });
+
+        if (!vendeur) {
+            return res.status(404).json({
+                message: "Compte introuvable"
+            });
+        }
+
+        if (!vendeur.resetPasswordCode || vendeur.resetPasswordCode !== code) {
+            return res.status(400).json({
+                message: "Code incorrect"
+            });
+        }
+
+        if (vendeur.resetPasswordExpires < Date.now()) {
+            return res.status(400).json({
+                message: "Code expiré"
+            });
+        }
+
+        res.json({
+            message: "Code valide"
+        });
+    } catch (error) {
+        res.status(500).json({
+            error: error.message
+        });
+    }
+};
+
+exports.resetPassword = async (req, res) => {
+    try {
+        const { email, code, password } = req.body;
+
+        if (!password || password.length < 6) {
+            return res.status(400).json({
+                message: "Le mot de passe doit contenir au moins 6 caractères"
+            });
+        }
+
+        const vendeur = await Vendeur.findOne({ email: (email || "").toLowerCase().trim() });
+
+        if (!vendeur) {
+            return res.status(404).json({
+                message: "Compte introuvable"
+            });
+        }
+
+        if (!vendeur.resetPasswordCode || vendeur.resetPasswordCode !== code) {
+            return res.status(400).json({
+                message: "Code invalide"
+            });
+        }
+
+        if (vendeur.resetPasswordExpires < Date.now()) {
+            return res.status(400).json({
+                message: "Code expiré"
+            });
+        }
+
+        vendeur.password = await bcrypt.hash(password, 10);
+        vendeur.resetPasswordCode = null;
+        vendeur.resetPasswordExpires = null;
+
+        await vendeur.save();
+
+        res.json({
+            message: "Mot de passe modifié."
+        });
+    } catch (error) {
+        res.status(500).json({
+            error: error.message
+        });
+    }
+};

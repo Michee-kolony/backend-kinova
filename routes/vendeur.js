@@ -6,6 +6,9 @@ const vendeurController = require("../controllers/vendeur");
 // PLUS DE MIDDLEWARE UPLOAD - La photo n'est plus obligatoire
 router.post("/register", vendeurController.inscrireVendeur);
 router.post("/login", vendeurController.loginVendeur);
+router.post("/forgot-password", vendeurController.sendResetCode);
+router.post("/verify-code", vendeurController.verifyResetCode);
+router.post("/reset-password", vendeurController.resetPassword);
 router.get("/", vendeurController.getVendeur);
 router.delete("/:id", vendeurController.supprimerVendeur);
 router.put('/:id', vendeurController.modifierVendeur);
