@@ -9,6 +9,11 @@ const chatController = require("../controllers/chat");
 // MESSAGERIE PRIVÉE CLIENT <-> VENDEUR
 // Accessible aux clients et vendeurs connectés
 // ==========================================
+
+// Déconnexion : l'appareil ne reçoit plus les messages de l'ancien compte
+// (sans authentification : le token de session n'existe déjà plus)
+router.post("/push-token/delier", chatController.delierPushToken);
+
 router.use(authChat);
 
 router.get("/conversations", chatController.listerConversations);

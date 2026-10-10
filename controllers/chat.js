@@ -409,3 +409,20 @@ exports.enregistrerPushToken = async (req, res) => {
         erreur(res, 500, error.message);
     }
 };
+
+exports.delierPushToken = async (req, res) => {
+
+    try {
+
+        const { token } = req.body;
+        if (!token) return erreur(res, 400, "Token manquant");
+
+        await Token.updateOne({ token }, { $unset: { userId: 1, role: 1 } });
+
+        res.status(200).json({ success: true });
+
+    } catch (error) {
+        console.log(error);
+        erreur(res, 500, error.message);
+    }
+};
