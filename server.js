@@ -3,6 +3,7 @@ const http = require('http');
 const express = require('express');
 const { Server } = require('socket.io');
 const app = require('./app');
+const brancherChat = require('./services/chatSocket');
 
 
 const server = http.createServer(app);
@@ -20,6 +21,8 @@ io.on('connection', (socket) => {
   socket.on('join', (userId) => {
     socket.join(userId);
   });
+
+  brancherChat(socket);
 
   socket.on('disconnect', () => {
     console.log(`Client déconnecté : ${socket.id}`);

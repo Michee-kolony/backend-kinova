@@ -9,6 +9,17 @@ const tokenSchema = new mongoose.Schema({
         unique: true
     },
 
+    // Utilisateur connecté sur l'appareil (pour les notifications de messagerie)
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        index: true
+    },
+
+    role: {
+        type: String,
+        enum: ["client", "vendeur"]
+    },
+
     createdAt: {
         type: Date,
         default: Date.now

@@ -20,6 +20,7 @@ const pawapayRoute = require("./routes/pawapay");
 const payoutRoutes = require("./routes/payout");
 const livreurRoute = require('./routes/livreur');
 const livraisonRoute = require('./routes/livraison');
+const chatRoute = require('./routes/chat');
 
 mongoose.connect(
   'mongodb://micheekolony71%40gmail.com:1708roosevelt@187.55.225.170:27017/kinova?authSource=admin',
@@ -73,6 +74,7 @@ app.use("/pawapay", pawapayRoute);
 app.use("/payout", payoutRoutes);
 app.use('/livreur', livreurRoute);
 app.use('/livraison', livraisonRoute);
+app.use('/chat', chatRoute);
 
 // Gestionnaire d'erreurs global : évite de renvoyer une page HTML brute
 // (ex: timeout réseau vers R2) et renvoie du JSON exploitable par le client
