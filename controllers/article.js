@@ -1,13 +1,13 @@
 const Article = require("../models/article");
-const r2 = require("../config/r2");
-const { DeleteObjectCommand } = require("@aws-sdk/client-s3");
+const { uploadImages, deleteImages } = require("../services/r2Images");
 
 exports.createArticle = async (req, res) => {
+
+    let images = [];
+
     try {
 
-        const images = req.files.map(file => {
-            return `https://pub-20adc7d32978483dafa25eec6f011365.r2.dev/${file.key}`;
-        });
+        images = await uploadImages(req.files, "articles");
 
         const article = new Article({
             nom: req.body.nom,
@@ -38,7 +38,11 @@ exports.createArticle = async (req, res) => {
 
     } catch (err) {
         console.log(err);
-        res.status(500).json({
+
+        // L'article n'a pas été créé : on retire ses images du bucket
+        await deleteImages(images);
+
+        res.status(err.status || 500).json({
             message: err.message
         });
     }
@@ -70,24 +74,7 @@ exports.deleteArticle = async (req, res) => {
         }
 
 
-        if(article.images?.length){
-
-            for(const imageUrl of article.images){
-
-                const key = imageUrl.split(".r2.dev/")[1];
-
-                console.log("Suppression R2 :", key);
-
-
-                await r2.send(
-                    new DeleteObjectCommand({
-                        Bucket:"kinova",
-                        Key:key
-                    })
-                );
-
-            }
-        }
+        await deleteImages(article.images);
 
 
         await Article.findByIdAndDelete(req.params.id);
@@ -110,89 +97,90 @@ exports.deleteArticle = async (req, res) => {
 
 };
 
-exports.updateArticle = (req, res) => {
+exports.updateArticle = async (req, res) => {
 
-    Article.findById(req.params.id)
+    let nouvellesImages = [];
 
-        .then(article => {
+    try {
 
-            if (!article) {
-                return res.status(404).json({
-                    message: "Article introuvable"
-                });
-            }
+        const article = await Article.findById(req.params.id);
 
-            if (req.body.nom !== undefined)
-                article.nom = req.body.nom;
-
-            if (req.body.prix !== undefined)
-                article.prix = req.body.prix;
-
-            if (req.body.reduction !== undefined)
-                article.reduction = req.body.reduction;
-
-            if (req.body.categorie !== undefined)
-                article.categorie = req.body.categorie;
-
-            if (req.body.genre !== undefined)
-                article.genre = req.body.genre;
-
-            if (req.body.description !== undefined)
-                article.description = req.body.description;
-
-            // Nouveaux champs
-            if (req.body.stock !== undefined)
-                article.stock = req.body.stock;
-
-            if (req.body.couleurs !== undefined)
-                article.couleurs = Array.isArray(req.body.couleurs)
-                    ? req.body.couleurs
-                    : JSON.parse(req.body.couleurs);
-
-            if (req.body.tailles !== undefined)
-                article.tailles = Array.isArray(req.body.tailles)
-                    ? req.body.tailles
-                    : JSON.parse(req.body.tailles);
-
-            if (req.body.vendeurId !== undefined)
-                article.vendeurId = req.body.vendeurId;
-
-            if (req.body.vendeurNom !== undefined)
-                article.vendeurNom = req.body.vendeurNom;
-
-            if (req.body.vendeurTelephone !== undefined)
-                article.vendeurTelephone = req.body.vendeurTelephone;
-
-            // Nouvelles images
-            if (req.files && req.files.length > 0) {
-                article.images = req.files.map(file =>
-                    `https://pub-20adc7d32978483dafa25eec6f011365.r2.dev/${file.key}`
-                );
-            }
-
-            return article.save();
-
-        })
-
-        .then(article => {
-
-            if (!article) return;
-
-            res.status(200).json({
-                message: "Article modifié avec succès",
-                article
+        if (!article) {
+            return res.status(404).json({
+                message: "Article introuvable"
             });
+        }
 
-        })
+        if (req.body.nom !== undefined)
+            article.nom = req.body.nom;
 
-        .catch(error => {
+        if (req.body.prix !== undefined)
+            article.prix = req.body.prix;
 
-            console.log(error);
+        if (req.body.reduction !== undefined)
+            article.reduction = req.body.reduction;
 
-            res.status(500).json({
-                message: error.message
-            });
+        if (req.body.categorie !== undefined)
+            article.categorie = req.body.categorie;
 
+        if (req.body.genre !== undefined)
+            article.genre = req.body.genre;
+
+        if (req.body.description !== undefined)
+            article.description = req.body.description;
+
+        // Nouveaux champs
+        if (req.body.stock !== undefined)
+            article.stock = req.body.stock;
+
+        if (req.body.couleurs !== undefined)
+            article.couleurs = Array.isArray(req.body.couleurs)
+                ? req.body.couleurs
+                : JSON.parse(req.body.couleurs);
+
+        if (req.body.tailles !== undefined)
+            article.tailles = Array.isArray(req.body.tailles)
+                ? req.body.tailles
+                : JSON.parse(req.body.tailles);
+
+        if (req.body.vendeurId !== undefined)
+            article.vendeurId = req.body.vendeurId;
+
+        if (req.body.vendeurNom !== undefined)
+            article.vendeurNom = req.body.vendeurNom;
+
+        if (req.body.vendeurTelephone !== undefined)
+            article.vendeurTelephone = req.body.vendeurTelephone;
+
+        // Nouvelles images : elles remplacent les anciennes
+        let anciennesImages = [];
+
+        if (req.files && req.files.length > 0) {
+            nouvellesImages = await uploadImages(req.files, "articles");
+            anciennesImages = article.images;
+            article.images = nouvellesImages;
+        }
+
+        await article.save();
+
+        // Les anciennes images ne sont plus utilisées : on les retire du bucket
+        await deleteImages(anciennesImages);
+
+        res.status(200).json({
+            message: "Article modifié avec succès",
+            article
         });
+
+    } catch (error) {
+
+        console.log(error);
+
+        await deleteImages(nouvellesImages);
+
+        res.status(error.status || 500).json({
+            message: error.message
+        });
+
+    }
 
 };
